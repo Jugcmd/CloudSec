@@ -117,7 +117,10 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   }
 }
 
-var frontendOrigin = trimEnd(storageAccount.properties.primaryEndpoints.web, '/')
+var frontendOriginRaw = storageAccount.properties.primaryEndpoints.web
+var frontendOrigin = endsWith(frontendOriginRaw, '/')
+  ? substring(frontendOriginRaw, 0, length(frontendOriginRaw) - 1)
+  : frontendOriginRaw
 
 resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
   name: apiAppName
