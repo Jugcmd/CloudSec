@@ -1,0 +1,351 @@
+﻿Degree
+	Digital Technology Solutions Specialist Software Engineering (Integrated Degree Apprenticeship)
+ 
+	Module
+	Cloud Engineering
+	Level
+	7
+	Term
+	May 2026
+	Submission deadline
+	Deadlines can be found in the module assessment area on the Hub
+	Total Parts
+	1
+	Number of formative development opportunities
+	Iterative in-session
+	Number of summative submission deadlines
+	1
+	Submission mode
+	Recorded demonstration
+Document containing references
+ 
+	Assessment Type
+	Oral presentation
+	Weightings
+	Part 1: 100%
+	Target audience for material (ie what level should you pitch this at)
+	A technical expert that will understand the technical aspects of your project
+	Tone for material
+	Formal
+	References
+	References required 
+	Use of Gen AI Optional
+  
+
+ 
+	It is appropriate, but not essential, to make constructive use of generative AI tools for this assignment.
+It may not be used to create the work you submit for assessment.
+You may, for example, use it for research support such as analysing public-domain data or papers, or brainstorming ideas.
+Any application or use of AI should always be acknowledged.
+Misuse of generative AI, as defined in BPP’s assessment regulations, will be treated as an academic offence and may be subject to disciplinary action.
+ 
+You should read the assessment guidance in this brief and the Acceptable Use of Generative AI for guidance: Acceptable Use of Generative AI (students)
+ 
+	
+
+ 
+1.     Assessment Brief Overview
+For software developers, understanding and leveraging cloud technologies is increasingly essential. This summative assignment encompasses all elements taught in the “Cloud Engineering” module. Using cloud platforms and services, it challenges you to demonstrate their understanding of cloud architecture, deployment strategies, security practices, and scalability techniques.
+Learning Outcomes (LOs)
+1.         Justify choices of cloud infrastructure, cloud deployment models, and cloud services with regard to business and legal requirements. 
+2.         Design and build cloud-based solutions that meet the needs of businesses and organisations. 
+3.         Optimise cloud-based solutions, including monitoring and performance optimisation, cost optimisation, and automation and orchestration. 
+4.         Design and implement secure and compliant cloud-based systems and applications to ensure cloud security and compliance. 
+5.         Select and defend cloud technology for a given purpose utilising trends in cloud computing, including emerging technologies and best practices. 
+ 
+Summative Assessment Overview
+The task is to create and deploy a small application to the cloud, utilising cloud architecture as appropriate, and to demonstrate the application, design, and rationale (20 minutes maximum)
+Formative assessment will take the form of iterative development during the sessions, there is no formal submission point, nor should you submit your work for feedback. You should ensure you are asking the tutor questions throughout your sessions that enable you to understand what is needed and to gather feedback on your approach.
+Summative Submission deadline: Recorded presentation to be submitted by the date stated on the module page to the Turnitin Dropbox available on the Module page in the Hub.
+Part 1 (100%) 
+Please note: ensure you read the general assessment guidance at the end of this document. 
+2.     Summative submission
+Project Description
+This practical assessment focuses on designing and implementing a cloud-based application. You will apply your knowledge of cloud architecture, security, performance optimisation, and cost management to develop a robust and scalable solution.
+ 
+You should create a small application that would assist someone(s) with a task at your workplace. You should keep the application small but it should include, as part of its function:
+·         A GUI
+·         Some business logic code
+·         A database
+ 
+The demonstration should clearly articulate the problem in the organisational context and make use of a range of appropriate sources to support your arguments. It should be pitched as a demonstration of the cloud principles utilised, with rationale.
+Your explanations should be provided as verbal explanations (voice over). You don’t need to have your camera on. The demonstration should be pitched as a demo, not a powerpoint presentation, although diagrams for illustration purposes are acceptable.
+Demonstration Structure
+Your demonstration should include the following aspects of your cloud-based application:
+1.       Cloud Architecture Design: Design the cloud architecture for the application.
+o   Use appropriate cloud services (compute, storage, networking).
+o   Include diagrams and detailed descriptions of the architecture.
+o   Justify the choice of services and architecture design.
+o   Environmental impact of your solution
+2.           Security and Compliance Implementation: Implement security measures to protect user data and ensure compliance with regulations.
+o   Implement encryption for data at rest and in transit.
+o   Use Identity and Access Management (IAM) to control access.
+o   Ensure compliance with GDPR, PCI DSS, and other relevant standards.
+3.           Performance Optimisation: Demonstrate implementation of strategies to optimise the performance of the application.
+o   Use auto-scaling to handle variable traffic.
+o   Implement monitoring tools to track performance metrics.
+o   Optimise database queries and application code for performance.
+4.           Cost Management: Develop and implement cost management strategies.
+o   Use reserved instances and spot instances to reduce costs.
+o   Implement auto-scaling to optimise resource usage.
+o   Use cost management tools to monitor and control spending.
+5.           Application Deployment and Artefact: Deploy the e-commerce application on the chosen cloud platform.
+o   Demonstrate the working application
+o   Ensure the application is fully functional and meets the requirements.
+ 
+You should ensure you use references throughout to justify your decisions and present in a professional manner.
+ 
+Summative submission format:
+Submission Requirements
+Note that this will NOT be a live presentation and you will be expected to record your presentation and submit it by the deadline date stated on the HUB. As such, you should choose and test your method of recording well in advance and should not leave the final recording to the last day.
+ 
+Technical issues will not be accepted as a reason for late submission, so it is imperative that you test your chosen method and record your demonstration well in advance of the deadline. 
+ 
+Recordings must be accessible to all who try to access them, if you are unsure of the format then check with your module tutor. You do not have to include a visual of yourself speaking, only your voice. 
+ 
+In the Turnitin Dropbox you should submit: 
+·         A document containing the completed header sheet and reference list
+·         Either a link to the recording, or the recording itself
+ 
+Formative submission format:
+Formative assessment will take the form of iterative development during the sessions, there is no formal submission point, nor should you submit your work for feedback. You should ensure you are asking the tutor questions throughout your sessions that enable you to understand what is needed and to gather feedback on your approach.
+Please note: ensure you read the general assessment guidance at the end of this document.
+3.     KSB Development
+The preparation and passing of this assessment  will help you to develop the following KSBs from the DTS apprenticeship standard:
+DTSS Core Technical Skills 
+	Code 
+	Details 
+	CTS2 
+	Design and develop technology roadmaps, implementation strategies and transformation plans focused on digital technologies to achieve improved productivity, functionality and end user experience in an area of technology specialism; 
+	CTS4
+	Negotiate and agree digital and technology specialism delivery budgets with those with decision-making responsibility;
+	CTS5
+	Develop and deliver management level presentations which resonate with senior stakeholders, both business and technical;
+	CTS6
+	Professionally present digital and technology solution specialism plans and solutions in a well-structured business report
+	CTS8
+	Be competent at negotiating and closing techniques in a range of interactions and engagements, both with senior internal and external stakeholders;
+	CTS12
+	Demonstrate effective technology leadership and change management skills for managing technology driven change and continuous improvement;
+	 
+DTSS Core Technical Knowledge 
+	Code 
+	Details 
+	CTK1
+	The strategic importance of technology enabled business processes, and how they are designed and managed to determine a firm’s ability to compete effectively;
+	CTK2
+	The principles of business transformation and how organisations integrate different management functions in the context of technological change;
+	CTK4 
+	Own employer’s business objectives and strategy, its position in the market and how own employer adds value to its clients through the services and/or products they provide; 
+	CTK5
+	How to justify the value of technology investments and apply benefits management and realisation;
+	 
+DTSS Core Behaviours 
+	Code 
+	Details 
+	CB2
+	Establish high levels of performance in digital and technology solutions activities;
+	CB3 
+	Be results and outcomes driven to achieve high key performance outcomes for digital and technology solutions objectives; 
+	CB4
+	Promote a high level of cooperation between own work group and other groups to establish a technology change led culture;
+	CB5
+	Develop and support others in developing an appropriate balance of leadership and technical skills;
+	 
+DTSS Software Engineering Specialist Skills 
+	Code 
+	Details 
+	SES1
+	Architect, build and support leading edge concurrent software platforms that are performant to industry standards and deliver responsive solutions with good test coverage;
+	SES2
+	Drive the technology decision-making and development process for projects of varying scales, considering current technologies including DevOps and Cloud Computing, and evaluate different technology design and implementation options making reasoned proposals and recommendations;
+	SES4 
+	Update current software products, improving the efficiency and functionality, and build new features to product specifications; 
+	SES5 
+	Accomplish planned software development tasks that deliver the expected features, within specified time constraints, security and quality requirements; 
+	 
+DTSS Software Engineering Specialist Technical Knowledge 
+	Code 
+	Details 
+	SETK1 
+	The rationale for software platform and solution development, including the organisational context; 
+	SETK5 
+	How to design, develop and deploy software solutions that are secure and effective in delivering the requirements of stakeholders and the factors that affect the design of a successful code; 
+	
+
+Assessment Criteria
+ 
+Assessment Criteria (Presentation) (100%) 
+These criteria are used to mark your work; we suggest you self-assess against these criteria before submission 
+ 
+	Criterion 
+	0-29% 
+Fail 
+	30-39% 
+Fail 
+	40-49% 
+Low Fail 
+	50-59% 
+Pass
+	60-69% 
+	70-79% 
+	80-100% 
+	Knowledge and understanding 
+	Understanding of cloud concepts (15%)
+	Demonstrates little to no understanding of fundamental cloud concepts. Key principles such as cloud architecture, services, and deployment models are not addressed or are misunderstood.
+	Demonstrates minimal understanding of cloud concepts. Basic principles are mentioned but not clearly explained or applied. There is a lack of coherence in how cloud services and models are understood.
+	Demonstrates some understanding of cloud concepts but lacks depth and clarity. Basic principles are partially addressed, but there are significant gaps in knowledge and application.
+	Demonstrates a basic understanding of cloud concepts. Key principles are addressed with some clarity. There is a general understanding of cloud services and deployment models, but the explanation may lack detail.
+	Demonstrates a good understanding of cloud concepts. Key principles are well-explained and applied. There is a clear understanding of cloud services, deployment models, and their applications.
+	Demonstrates a thorough understanding of cloud concepts. Key principles are comprehensively explained and effectively applied. There is a strong grasp of cloud services, deployment models, and their strategic use.
+	Demonstrates an exceptional understanding of cloud concepts. Key principles are explained with great detail and insight. There is a deep and nuanced understanding of cloud services, deployment models, and their innovative applications.
+	 
+	Design and architecture (35%)
+	The design and architecture are either not provided or are fundamentally flawed. There is no clear structure or rationale behind the design choices. Key components and their interactions are missing or incorrect.
+	The design and architecture are minimally developed and poorly structured. Key components are mentioned but not well-defined or integrated. The rationale behind design choices is unclear or poorly justified.
+	The design and architecture are partially developed but lack coherence and detail. Key components are identified but not fully explained or integrated. The rationale behind design choices is weak or incomplete.
+	The design and architecture are adequately developed with a basic structure. Key components are identified and their interactions are explained. The rationale behind design choices is provided but may lack depth.
+	The design and architecture are well-developed and structured. Key components are clearly identified and their interactions are well-explained. The rationale behind design choices is logical and well-justified.
+	The design and architecture are comprehensive and detailed. Key components are thoroughly identified and their interactions are clearly and effectively explained. The rationale behind design choices is strong and well-supported.
+	The design and architecture are exemplary, highly detailed, and innovative. Key components are meticulously identified and their interactions are seamlessly integrated. The rationale behind design choices is exceptionally well-justified, demonstrating deep insight and understanding.
+	 
+	Security and compliance (10%)
+	Security measures are either not implemented or are fundamentally flawed. There is no consideration of compliance with relevant standards and regulations. The system is highly vulnerable to security threats.
+	Minimal security measures are implemented but are largely ineffective. Compliance with relevant standards and regulations is poorly addressed or ignored. The system remains vulnerable to many security threats.
+	Some security measures are implemented but are insufficient to protect the system effectively. Compliance with relevant standards and regulations is partially addressed but lacks thoroughness. Significant vulnerabilities remain.
+	Basic security measures are implemented and provide a reasonable level of protection. Compliance with relevant standards and regulations is addressed but may lack detail. Common security threats are mitigated, but there may be gaps in the security strategy.
+	Security measures are well-implemented and provide good protection against common threats. Compliance with relevant standards and regulations is well-addressed. The system demonstrates secure coding practices, effective encryption, and robust access control.
+	Security measures are comprehensive and highly effective. Compliance with relevant standards and regulations is thoroughly addressed. The system is well-protected against a wide range of threats, employing advanced security practices and thorough threat analysis.
+	Security measures are exemplary and provide exceptional protection. Compliance with relevant standards and regulations is meticulously addressed. The system is highly resilient to a broad spectrum of threats, employing state-of-the-art security practices, proactive threat detection, and innovative security solutions.
+	
+
+	Performance optimisation (20%)
+	No performance optimisation strategies are implemented. The system is slow, inefficient, and unable to handle expected loads. There is no evidence of performance monitoring or tuning.
+	Minimal performance optimisation strategies are implemented but are largely ineffective. The system struggles with performance issues and cannot handle variable traffic. Performance monitoring is inadequate or absent.
+	Some performance optimisation strategies are implemented but are insufficient. The system has noticeable performance issues and limited ability to handle variable traffic. Performance monitoring is basic and lacks depth.
+	Basic performance optimisation strategies are implemented. The system performs adequately under normal conditions but may struggle under high load. Performance monitoring is in place but may not be comprehensive.
+	Well-defined performance optimisation strategies are implemented. The system performs well under most conditions and can handle variable traffic. Performance monitoring is effective and includes key metrics.
+	Comprehensive performance optimisation strategies are implemented. The system performs efficiently under a wide range of conditions and handles variable traffic smoothly. Performance monitoring is thorough and includes advanced metrics and analysis.
+	Exemplary performance optimisation strategies are implemented. The system performs exceptionally well under all conditions, including high load. Performance monitoring is state-of-the-art, with real-time metrics, automated alerts, and proactive tuning.
+	
+
+	Cost management (20%)
+	No cost management strategies are implemented. The system incurs high and uncontrolled costs. There is no evidence of cost monitoring or optimization efforts.
+	Minimal cost management strategies are implemented but are largely ineffective. The system incurs unnecessary costs, and there is little to no effort to monitor or control spending.
+	Some cost management strategies are implemented but are insufficient. The system incurs avoidable costs, and cost monitoring is basic and lacks depth. There is limited effort to optimize resource usage.
+	Basic cost management strategies are implemented. The system incurs reasonable costs, and there is some effort to monitor and control spending. Cost optimization is present but may not be fully effective.
+	Well-defined cost management strategies are implemented. The system incurs controlled costs, and there is effective monitoring and optimization of resource usage. Cost-saving measures such as reserved instances and auto-scaling are utilised.
+	Comprehensive cost management strategies are implemented. The system incurs optimized costs, with thorough monitoring and control of spending. Advanced cost-saving measures are employed, and resource usage is highly efficient.
+	Exemplary cost management strategies are implemented. The system incurs minimal and highly optimized costs. State-of-the-art cost monitoring and control tools are used, with proactive and innovative cost-saving measures. Resource usage is maximized for efficiency and cost-effectiveness.
+	
+
+General Assessment Guidance
+·                     Late submissions will not be marked unless an approved extension has been granted through the formal extension request process.
+·                     All coursework must be submitted via TurnitIn only.
+·                     Only submissions made via the specified mode will be accepted and hard copies or any other digital form of submissions (like via email or pen drive etc.) will not be accepted. 
+·                     Please use English (UK) as your language in the submission.
+·                     Do not put your name or contact details anywhere on your submission. You should only put your student registration number (SRN) which will ensure your submission is recognised in the marking process.
+·                     Please ensure your student registration number is on your front cover sheet
+·                     You should include a completed copy of the Assignment Cover sheet. Any submission without this completed Assignment Coversheet may be considered invalid and not marked. 
+·                     BPP University have published guidelines on the Acceptable Use of GenerativeAI which we expect students to familiarise themselves with. In addition, you can find a wealth of information on the Hub here, under BPP’s ‘Generative AI Awareness’ module. You will also find a tool ‘Can I use AI in my studies at BPP?’ to help you determine whether your intended use of Generative AI is allowed in a particular type of programme or course.
+ 
+Time limit
+·                     Assignments that exceed the time limit count will have all work over the maximum limit discounted and will not be taken into consideration when assigning a grade.
+·                     You may submit work that is less than the time limit count, but you are advised that anything substantially short of the time limit is an indication that you haven’t completed the full requirements of the task to the depth required for a pass. 
+·                     You must specify total time on the front page of your report.
+ 
+ 
+Not included in the word count
+	Included in the word count
+	The cover sheet
+	Headings and sub-headings
+	The appendix
+	Text based tables
+	Numerical tables
+	In-text citations
+	Reference list
+	In-text citations for diagrams and charts
+	Text in diagrams
+	 
+	Contents page
+	 
+	List of figures
+	 
+	Executive summary (where required)
+	 
+	 
+ 
+Referencing
+·                     You are required to use only Harvard Referencing System in your submission. Any content which is already published by other author(s) and is not referenced will be considered as a case of plagiarism.  
+·                     The BPP library has created two training videos to support referencing and the use of the software Zotero.
+You can access these materials by following this link https://bpp.libguides.com/technology
+·                     Referencing forms part of the assessment criteria and any referencing not in the Harvard convention will be assessed as inaccurate.
+·                     All content derived from the work of others whether summarised, paraphrased must be referenced correctly using the Harvard Referencing System. This includes diagrams, charts and tables copied from others.
+·                     Footnotes should not be used.
+·                     Anything that is not referenced that is not your original work will be regarded as plagiarism. 
+·         The School of Technology has a strict policy regarding authenticity of assessments.  In proven instances of plagiarism or collusion, severe punishment will be imposed on offenders. You are advised to read the rules and regulations regarding plagiarism and collusion in the GARs and MOPP which are available on Hub in the help and support section. 
+ 
+Academic Skills/Report Writing​
+·         This includes the overall structure of the written work, but more than that, it is the ability to synthesise information, present a well-founded and justified argument. The highest marks go to those who critically evaluate and present original ideas. It also includes the form in which the arguments are expressed.
+·         Unless the assessment specifically asks them to reflect on their own experiences, the default expectation is that academic reports should be written in the third person.
+·         Arguments should be made from a neutral perspective whenever possible, not based on an individual’s opinions.​
+·          The referencing marks are for the use of referencing, not just the accuracy of Harvard style. Every point has an accurate and relevant citation, the grading criteria specifies “accurate” – this would be peer review papers, textbooks and such. Not blogs, not Wikipedia. References need to be as close to the original source as possible. It may be suitable to use product documentation, if this is included there needs to be an awareness of the bias of the source. ​
+·          Academic Skills are relative to the level of study, the module learning outcomes can be used to guide expectations.
+ 
+ Appendix
+·                     Items in the appendix of themselves do not contribute towards the final grade. 
+·                     The appendix is for look up items only to support arguments in the main body of the assignment.
+·                     Appropriate use of an appendix that is well structured and provides relevant supporting documentation will be assessed as part of the presentation and structure criteria within marking guides but the content itself will not be marked.
+ 
+Submission and Results
+·                     Please note the following:
+·                     Submit your summative submission work in the links on the summative submission page on the Hub. Please double check you are submitting to the correct link. 
+·                     Please submit your formative submission to the links on the formative submission page on the Hub.
+·                     If, for any reason, you submit in the wrong link, your submission will not be marked.
+·                     Ensure that you submit your coursework on time. In line with University regulations, late submissions will not be marked, you will therefore be awarded zero. 
+·                     Please take note of your Paper ID. You will need this in any queries about your submission or your mark.
+·                     Turnitin may take up to 48 hours to calculate similarity. If you upload a draft file to check similarity, please ensure you do this more than 48 hours before the deadline, so you have time to upload a final copy.
+·                     The coursework logged in the system at the closing time on the due date will be marked – no exceptions.
+·                     You can also use the Test Link to check similarity.
+·                     If you cannot see or cannot access the link you need, please complete an Online Query Form, which can be accessed here
+·                     You can access your feedback once results have been posted. Please go back to the link where you submitted and click the blue pen icon. 
+·                     You will be emailed your final results each term, on the date advised to you at the beginning of that term. 
+ 
+ 
+Programme specific guidance
+·                     You are required to achieve minimum 50% overall to pass this module
+
+BPP Coursework Cover Sheet
+Please use the table below as your cover sheet for the 1st page of the submission. The sheet should be before the cover/title page of your submission.
+Programme
+	Digital Technology Solutions Specialist Software Engineering (Integrated Degree Apprenticeship)
+ 
+	Module name
+	 
+	Schedule Term
+	 
+	Student Reference Number (SRN)
+	 
+	Report/Assignment Title
+	 
+	Date of Submission
+(Please attach the confirmation of any extension received)
+	 
+	 
+	 
+	Declaration of Original Work:
+§  I hereby declare that I have read and understood BPP’s regulations on plagiarism and that this is my original work, and that I have researched, undertaken, completed and submitted in accordance with the requirements of BPP School of Technology.
+§  I declare that where I have used any AI tools, it was for the following reasons (highlight as appropriate):
+o  To create an assignment plan
+o  To create a draft
+o  To correct language errors
+o  Other (please describe)
+_______________________________________________________
+§  I have copied & retained for BPP University’s reference, all AI prompts used in the creation of AI content and all AI-generated responses in support of my assignment and attached relevant evidence in the appendices. I understand that I may be required to participate in a viva voce, where I will be questioned on any aspect of my assignment, including key concepts, theories, examples used, & any sources included.
+§  The word count, excluding contents table, bibliography and appendices, is                words.
+ 
+Student Reference Number:                                                                                           Date:
+ 
+	By submitting this coursework you agree to all rules and regulations of BPP regarding assessments and awards for programmes.  Please note, submission is your declaration you are fit to sit.
+BPP University reserves the right to use all submitted work for educational purposes and may request that work be published for a wider audience.
+BPP School of Technology

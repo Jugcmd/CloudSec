@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/CloudSec.Api.Tests/CloudSec.Api.Tests.csproj" />
+    <Project Path="backend/CloudSec.Api/CloudSec.Api.csproj" />
+  </Folder>
+</Solution>

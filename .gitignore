@@ -1,0 +1,30 @@
+# Visual Studio / VS Code local state
+.vs/
+.vscode/
+*.user
+
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+**/dist/
+
+# Node artifacts
+**/node_modules/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Local databases and runtime files
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

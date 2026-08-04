@@ -1,0 +1,111 @@
+name: Azure Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      resourceGroup:
+        description: Azure resource group name
+        required: true
+        default: rg-cloudsec-dev
+      location:
+        description: Azure location
+        required: true
+        default: uksouth
+      namePrefix:
+        description: Resource name prefix (lowercase, 3-12 chars)
+        required: true
+        default: cloudsec
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      RG_NAME: ${{ github.event.inputs.resourceGroup }}
+      LOCATION: ${{ github.event.inputs.location }}
+      NAME_PREFIX: ${{ github.event.inputs.namePrefix }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Ensure Resource Group
+        run: |
+          az group create --name "$RG_NAME" --location "$LOCATION"
+
+      - name: Deploy Infrastructure
+        id: infra
+        run: |
+          az deployment group create \
+            --resource-group "$RG_NAME" \
+            --name "cloudsec-${{ github.run_number }}" \
+            --template-file infra/main.bicep \
+            --parameters @infra/main.parameters.json \
+            --parameters location="$LOCATION" namePrefix="$NAME_PREFIX" \
+            --parameters sqlAdminPassword="${{ secrets.SQL_ADMIN_PASSWORD }}" \
+            --parameters jwtSigningKey="${{ secrets.JWT_SIGNING_KEY }}"
+
+          OUTPUTS=$(az deployment group show \
+            --resource-group "$RG_NAME" \
+            --name "cloudsec-${{ github.run_number }}" \
+            --query properties.outputs -o json)
+
+          API_APP_NAME=$(echo "$OUTPUTS" | jq -r '.apiAppName.value')
+          API_URL=$(echo "$OUTPUTS" | jq -r '.apiUrl.value')
+          STORAGE_ACCOUNT=$(echo "$OUTPUTS" | jq -r '.frontendStorageAccountName.value')
+          FRONTEND_URL=$(echo "$OUTPUTS" | jq -r '.frontendUrl.value')
+
+          echo "api_app_name=$API_APP_NAME" >> "$GITHUB_OUTPUT"
+          echo "api_url=$API_URL" >> "$GITHUB_OUTPUT"
+          echo "storage_account=$STORAGE_ACCOUNT" >> "$GITHUB_OUTPUT"
+          echo "frontend_url=$FRONTEND_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test API
+        run: dotnet test backend/CloudSec.Api.Tests/CloudSec.Api.Tests.csproj --nologo
+
+      - name: Publish API
+        run: dotnet publish backend/CloudSec.Api/CloudSec.Api.csproj -c Release -o publish-api
+
+      - name: Deploy API to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ steps.infra.outputs.api_app_name }}
+          package: publish-api
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          VITE_API_BASE_URL=${{ steps.infra.outputs.api_url }} npm run build
+
+      - name: Deploy Frontend Static Website
+        run: |
+          az storage blob upload-batch \
+            --auth-mode login \
+            --account-name "${{ steps.infra.outputs.storage_account }}" \
+            --source frontend/dist \
+            --destination '$web' \
+            --overwrite
+
+      - name: Deployment Summary
+        run: |
+          echo "API URL: ${{ steps.infra.outputs.api_url }}"
+          echo "Frontend URL: ${{ steps.infra.outputs.frontend_url }}"
