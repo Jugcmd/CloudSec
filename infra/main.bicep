@@ -33,7 +33,7 @@ var sqlDatabaseName = 'cloudsecdb'
 var storageName = toLower('${take(normalizedPrefix, 10)}st${take(uniqueString(resourceGroup().id), 10)}')
 var appInsightsName = '${normalizedPrefix}-appi'
 var logAnalyticsName = '${normalizedPrefix}-law'
-var frontendOrigin = 'https://${storageName}.z22.web.core.windows.net'
+var frontendOrigin = 'https://${storageName}.z22.web.${environment().suffixes.storage}'
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsName
@@ -118,7 +118,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   }
 }
 
-resource staticWebsite 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+resource staticWebsite 'Microsoft.Storage/storageAccounts/blobServices@2021-09-01' = {
   parent: storageAccount
   name: 'default'
   properties: {
@@ -155,7 +155,7 @@ resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'ConnectionStrings__DefaultConnection'
-          value: 'Server=tcp:${sqlServer.name}.database.windows.net,1433;Initial Catalog=${sqlDatabaseName};Persist Security Info=False;User ID=${sqlAdminLogin};Password=${sqlAdminPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
+          value: 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Initial Catalog=${sqlDatabaseName};Persist Security Info=False;User ID=${sqlAdminLogin};Password=${sqlAdminPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
         }
         {
           name: 'Jwt__Issuer'
