@@ -33,7 +33,6 @@ var sqlDatabaseName = 'cloudsecdb'
 var storageName = toLower('${take(normalizedPrefix, 10)}st${take(uniqueString(resourceGroup().id), 10)}')
 var appInsightsName = '${normalizedPrefix}-appi'
 var logAnalyticsName = '${normalizedPrefix}-law'
-var frontendOrigin = 'https://${storageName}.z22.web.${environment().suffixes.storage}'
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsName
@@ -117,6 +116,8 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     supportsHttpsTrafficOnly: true
   }
 }
+
+var frontendOrigin = trimEnd(storageAccount.properties.primaryEndpoints.web, '/')
 
 resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
   name: apiAppName
