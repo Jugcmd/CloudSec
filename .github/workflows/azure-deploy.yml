@@ -10,7 +10,7 @@ on:
       location:
         description: Azure location
         required: true
-        default: uksouth
+        default: spaincentral
       namePrefix:
         description: Resource name prefix (lowercase, 3-12 chars)
         required: true
@@ -36,6 +36,30 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Show Resolved Inputs
+        run: |
+          echo "RG_NAME=$RG_NAME"
+          echo "LOCATION=$LOCATION"
+          echo "NAME_PREFIX=$NAME_PREFIX"
+
+      - name: Validate Provider Registrations
+        run: |
+          set -e
+          MISSING=0
+          for NS in Microsoft.Web Microsoft.Sql Microsoft.Storage Microsoft.OperationalInsights Microsoft.Insights; do
+            STATE=$(az provider show --namespace "$NS" --query registrationState -o tsv || echo "Unknown")
+            echo "$NS registrationState=$STATE"
+            if [ "$STATE" != "Registered" ]; then
+              MISSING=1
+            fi
+          done
+
+          if [ "$MISSING" -ne 0 ]; then
+            echo "One or more required providers are not registered."
+            echo "Ask a subscription admin to register: Microsoft.Web, Microsoft.Sql, Microsoft.Storage, Microsoft.OperationalInsights, Microsoft.Insights"
+            exit 1
+          fi
 
       - name: Ensure Resource Group
         run: |
@@ -98,9 +122,21 @@ jobs:
 
       - name: Deploy Frontend Static Website
         run: |
-          az storage blob upload-batch \
-            --auth-mode login \
+          STORAGE_KEY=$(az storage account keys list \
+            --resource-group "$RG_NAME" \
             --account-name "${{ steps.infra.outputs.storage_account }}" \
+            --query '[0].value' -o tsv)
+
+          az storage blob service-properties update \
+            --account-name "${{ steps.infra.outputs.storage_account }}" \
+            --account-key "$STORAGE_KEY" \
+            --static-website \
+            --index-document index.html \
+            --404-document index.html
+
+          az storage blob upload-batch \
+            --account-name "${{ steps.infra.outputs.storage_account }}" \
+            --account-key "$STORAGE_KEY" \
             --source frontend/dist \
             --destination '$web' \
             --overwrite

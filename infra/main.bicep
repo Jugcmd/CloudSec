@@ -118,18 +118,6 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   }
 }
 
-resource staticWebsite 'Microsoft.Storage/storageAccounts/blobServices@2021-09-01' = {
-  parent: storageAccount
-  name: 'default'
-  properties: {
-    staticWebsite: {
-      enabled: true
-      indexDocument: 'index.html'
-      errorDocument404Path: 'index.html'
-    }
-  }
-}
-
 resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
   name: apiAppName
   location: location
