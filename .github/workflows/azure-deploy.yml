@@ -103,11 +103,43 @@ jobs:
       - name: Publish API
         run: dotnet publish backend/CloudSec.Api/CloudSec.Api.csproj -c Release -o publish-api
 
-      - name: Deploy API to App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ steps.infra.outputs.api_app_name }}
-          package: publish-api
+      - name: Prepare API Package
+        run: |
+          cd publish-api
+          zip -r ../publish-api.zip .
+
+      - name: Wait for App Service SCM Stabilization
+        run: |
+          echo "Waiting 90 seconds for potential SCM container restarts after infra/app settings updates..."
+          sleep 90
+
+      - name: Deploy API to App Service (Retry)
+        run: |
+          set +e
+          MAX_ATTEMPTS=5
+          ATTEMPT=1
+
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Deploy attempt $ATTEMPT of $MAX_ATTEMPTS"
+            az webapp deploy \
+              --resource-group "$RG_NAME" \
+              --name "${{ steps.infra.outputs.api_app_name }}" \
+              --src-path publish-api.zip \
+              --type zip
+
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -eq 0 ]; then
+              echo "API deployment succeeded on attempt $ATTEMPT"
+              exit 0
+            fi
+
+            echo "API deployment failed on attempt $ATTEMPT. Waiting 45 seconds before retry..."
+            ATTEMPT=$((ATTEMPT + 1))
+            sleep 45
+          done
+
+          echo "API deployment failed after $MAX_ATTEMPTS attempts."
+          exit 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
