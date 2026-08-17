@@ -185,38 +185,47 @@ business logic, database persistence, and role-based access — not a prototype.
 - Application Insights → Live Metrics or Requests chart
 - App Service Plan → Autoscale → show the configured rules
 - Monitor → Alerts → show the CPU severity 2 alert
+- Briefly: show AppDbContext.cs open in editor — indexes visible
 
 **What to say:**
-"Performance and operational resilience are addressed at two levels.
+"Performance and operational resilience are addressed at multiple levels — application code,
+database, caching, and infrastructure.
 
-At the application level: the API exposes a /healthz liveness endpoint and a /readyz readiness
-endpoint. The readiness endpoint queries the database so it only returns healthy when the full
-stack is functional. The App Service health check path is configured to /healthz — the platform
-automatically removes unhealthy instances from load balancing rotation, providing self-healing
-behaviour with no manual intervention.
+Starting at the database layer: I have explicitly defined indexes on the fields that drive
+every query in this application — Status for filtered counts, CreatedUtc for ordered listing,
+RiskScore for high-risk aggregation, and a composite index on RequestId and CreatedUtc for
+event timeline retrieval. This follows the principle that query performance should be designed
+in, not tuned reactively (Ramakrishnan and Gehrke, 2003).
 
-[Show /healthz and /readyz responses]
+[Show AppDbContext briefly]
 
-Application Insights is instrumented on the API and captures request telemetry, dependency
-calls, failure rates, and latency percentiles in real time. This provides the observability
-layer described by the Google SRE Book (Beyer et al., 2016) as essential for production
-reliability — specifically request rate, error rate, and latency as core golden signals.
+The GetAll endpoint uses a single projected EF Core query — rather than loading full entity
+graphs into memory and mapping them in C#, the projection happens in SQL. This eliminates
+unnecessary data transfer between the database and the application server.
 
-[Show App Insights dashboard]
+The summary endpoint — which is the most frequently called read endpoint as it powers the
+dashboard — uses database-level aggregation: COUNT, AVG, and filtered COUNT operations run
+on the SQL engine, not in application memory. It is also wrapped in a 30-second output cache.
+A governance dashboard does not need sub-second freshness; 30 seconds is appropriate and
+means the database is queried at most twice per minute regardless of concurrent users.
 
-For scaling: the App Service Plan is Standard S1, the minimum tier supporting autoscale.
-The autoscale rules I have configured are:
-- Scale out when CPU exceeds 70% for 5 minutes — adds an instance
-- Scale in when CPU drops below 30% for 10 minutes — removes an instance
-- Maximum 3 instances
+At the application level, the API exposes /healthz and /readyz endpoints. The readiness
+endpoint queries the database directly — it only returns healthy when the full stack is
+functional. App Service uses /healthz as its health check path, providing automatic instance
+removal for unhealthy nodes.
 
-This means the system responds to genuine load automatically, without human intervention.
-A CPU alert at severity 2 fires when the threshold is breached, alerting an operator to
-review whether the autoscale response is working as expected.
+[Show /healthz and /readyz responses live]
 
-For database performance: the queries use Entity Framework Core with proper indexed lookups
-on the primary key and status fields. The connection is pooled and managed through the
-framework, preventing connection exhaustion under load."
+Application Insights captures request telemetry, dependency calls, failure rates, and latency
+in real time. This gives the three golden signals described in Google's SRE book
+(Beyer et al., 2016): request rate, error rate, and latency.
+
+[Show App Insights dashboard with real traffic]
+
+For scaling: autoscale rules scale out above 70% CPU for 5 minutes and scale in below 30%
+for 10 minutes, with a maximum of 3 instances. A CPU alert at severity 2 fires at threshold
+breach, enabling operator review. This is proactive rather than reactive scaling
+— the system responds to trends, not to outages."
 
 **Rubric served:** Performance optimisation (primary)
 
@@ -225,45 +234,48 @@ framework, preventing connection exhaustion under load."
 ### SEGMENT 6 — Cost management (16:30–18:30)
 
 **What to show on screen:**
-- Azure Portal → Cost Management → show the resource group cost view or cost analysis
-- Resources → show resource tags on App Service (Application, Environment, Owner, CostCenter)
-- App Service Plan → Pricing tier → show S1 selection
-- Azure Pricing Calculator page (briefly) or a simple cost estimate note
+- Azure Portal → Cost Management → cost analysis for the resource group
+- Any resource → Tags tab (Application, Environment, Owner, CostCenter visible)
+- App Service Plan → Pricing tier → S1 shown
+- [ ] Cost Management → Budgets → show the monthly budget alert configured
+- [ ] Brief code view: AppDbContext.cs with indexes visible in editor
 
 **What to say:**
-"Cost management was a deliberate constraint in the design of this system, not an afterthought.
+"Cost management is treated as a first-class engineering concern in this deployment, not
+something bolted on after the fact.
 
-Every resource is tagged with Application, Environment, Owner, and CostCenter tags.
-In Azure Cost Management these tags enable cost attribution, chargeback reporting, and
-budget policy enforcement. This is a FinOps Foundation (2023) best practice — tagging
-is the foundation of cost governance at scale.
+Every resource carries four tags: Application, Environment, Owner, and CostCenter. In Azure
+Cost Management these tags power cost attribution, chargeback reporting, and budget policy
+enforcement. The FinOps Foundation (2023) identifies tagging as the foundational practice
+for cost governance — without it, cloud spend cannot be allocated or controlled at scale.
 
 [Show resource tags]
 
-The resource choices are deliberately right-sized:
-- App Service Standard S1 — the minimum tier supporting autoscale. Any tier below this
-  loses autoscale capability.
-- Azure SQL Basic — appropriate for the read-write pattern of this workload.
-- Standard LRS storage — adequate redundancy at the lowest cost tier for static hosting.
+The resource tier choices are right-sized by design:
+- App Service Standard S1 — minimum tier supporting autoscale; dropping below this loses
+  the ability to respond to load dynamically
+- Azure SQL Basic — appropriate for the read-write pattern; Basic tier provides 5 DTUs which
+  is sufficient for internal governance tooling at this scale
+- Storage Standard LRS — adequate redundancy for static hosting at the lowest cost point
 
-Autoscaling is a direct cost control: the system scales to one instance at idle and only
-adds capacity under load. This avoids the waste of permanently provisioned but underused
-compute.
+Autoscale is a direct cost control — the system operates at one instance at idle and scales
+only under real load, avoiding the waste of permanently provisioned but underused compute.
 
-[Show autoscale rules again briefly]
+I have also deployed an Azure Budget in the Bicep template — a $30 monthly cap with alerts
+at 80% and 100% of actual spend against the resource group. This is a proactive cost control:
+the team receives a notification before spend becomes a problem, not after.
 
-For a production workload with predictable baseline usage, I would implement Azure Reserved
-Instances on the App Service Plan — Microsoft offers up to 72% discount over pay-as-you-go
-for one or three year commitments (Microsoft Azure, 2024). For any non-critical batch
-processing extensions, Azure Spot Instances would offer further savings at up to 90% discount
-with graceful eviction handling.
+[Show the budget in Cost Management → Budgets]
 
-[Show Azure Cost Management view]
+For a production workload with a predictable baseline, I would apply Azure Reserved Instances
+on the App Service Plan. Microsoft offers up to 72% discount over pay-as-you-go for one or
+three-year commitments (Microsoft Azure, 2024). For any batch processing extensions, Azure
+Spot Instances would offer further savings at up to 90% discount with graceful eviction
+handling.
 
-I would also add an Azure Budget alert at 80% of expected monthly spend so that unexpected
-cost anomalies are flagged before they become significant. The combination of tagged resources,
-right-sizing, autoscaling, reserved capacity planning, and budget alerts represents a
-comprehensive FinOps-aligned cost governance approach."
+The combination of tagged resources, right-sized tiers, autoscale, an automated budget alert,
+and a clear path to reserved capacity represents a comprehensive, FinOps-aligned cost
+governance model."
 
 **Rubric served:** Cost management (primary)
 
@@ -393,4 +405,4 @@ State these as "(Author, Year)" during the relevant segment. Full list for submi
 - NCSC (2023) *Cloud Security Guidance*. Available at: https://www.ncsc.gov.uk/collection/cloud/understanding-cloud-services
 - OWASP (2021) *OWASP Top Ten*. Available at: https://owasp.org/www-project-top-ten/
 - OWASP (2021) *Secrets Management Cheat Sheet*. Available at: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
-- Wiggins, A. (2017) *The Twelve-Factor App*. Available at: https://12factor.net
+- Ramakrishnan, R. and Gehrke, J. (2003) *Database Management Systems*. 3rd edn. New York: McGraw-Hill.
