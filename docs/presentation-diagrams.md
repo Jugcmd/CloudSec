@@ -1,181 +1,177 @@
-# CloudSec presentation diagrams
+# CloudSec — Demo Diagrams
 
-This file contains draft diagrams for the assessment presentation. These are designed to be simple, credible, and easy to explain in a live demo or recorded presentation.
+Diagrams for use during the recorded demo. Show each one at the point indicated in the script. Keep them on screen long enough to talk through the key points — roughly 30–60 seconds each.
 
 ---
 
-## 1) Business problem / before vs after workflow
+## 1. Business problem — before vs after
 
-Use on: Slide 2 (Business problem)
+> 📺 Use in: **Segment 1** (0:00–2:00) — show while setting context
 
 ```mermaid
 flowchart LR
-    A[Manual email / spreadsheet] --> B[Unclear ownership]
-    A --> C[No audit trail]
-    A --> D[No consistent risk review]
-    A --> E[Slow, inconsistent decisions]
+    subgraph BEFORE ["❌ Without CloudSec"]
+        A[Exception requested\nover email / Slack] --> B[No risk assessment]
+        B --> C[Informal decision\nno record]
+        C --> D[No audit trail\nno accountability]
+    end
 
-    B --> F[Security exception process]
-    C --> F
-    D --> F
-    E --> F
+    subgraph AFTER ["✅ With CloudSec"]
+        E[Requester submits\nvia portal] --> F[Automatic risk\nscoring]
+        F --> G[Approver decision\nwith comment]
+        G --> H[Immutable audit log\nGDPR / PCI evidence]
+    end
 
-    F --> G[CloudSec workflow]
-    G --> H[Request submitted]
-    H --> I[Risk scoring]
-    I --> J[Approval / rejection decision]
-    J --> K[Audit log + traceability]
+    BEFORE -->|replaced by| AFTER
 ```
-
-Why this works:
-- It shows the current pain clearly
-- It frames the app as a governance improvement, not just an app feature
-- Good for a business audience and for rubric alignment
 
 ---
 
-## 2) System architecture diagram
+## 2. System architecture
 
-Use on: Slide 4 (Architecture)
+> 📺 Use in: **Segment 2** (2:00–6:00) — hold for ~60 seconds, then switch to Azure Portal
 
 ```mermaid
 flowchart TB
-    U[User / Approver / Requester] --> FE[React Frontend\nAzure App Service / Static hosting]
-    FE --> API[ASP.NET Core API\nAzure App Service]
-    API --> DB[(SQLite in dev\nAzure SQL in prod)]
-    API --> KV[Azure Key Vault\nJWT secret + DB connection]
-    API --> AI[Application Insights\nLogs + telemetry]
-    API --> LA[Log Analytics]
-    FE --> AI
+    User["👤 User\n(Requester / Approver)"]
 
-    GH[GitHub Actions] --> BICEP[Bicep Infrastructure as Code]
-    BICEP --> AZ[Azure Resources\nApp Service, SQL, Storage, Key Vault, Monitor]
-    AZ --> API
-    AZ --> DB
-    AZ --> KV
+    subgraph AZURE ["Microsoft Azure"]
+        subgraph FRONTEND ["Static Hosting"]
+            FE["React SPA\nBlob Storage + CDN"]
+        end
+
+        subgraph API_TIER ["App Service (Standard S1)"]
+            PROD["Production slot\nASP.NET Core API"]
+            STAGING["Staging slot\nBlue/green deployment"]
+            STAGING -->|health check → swap| PROD
+        end
+
+        subgraph DATA ["Data & Secrets"]
+            DB[("Azure SQL\n(SQLite in dev)")]
+            KV["Azure Key Vault\nJWT key + DB connection"]
+        end
+
+        subgraph OBS ["Observability"]
+            AI["Application Insights\nRequest telemetry\nCustom business events"]
+            LA["Log Analytics"]
+        end
+
+        subgraph COST ["Cost & Governance"]
+            BUDGET["Azure Budget\n80% + 100% alerts"]
+            SCALE["Autoscale\n1–3 instances"]
+            TAGS["Resource tags\nApplication · Environment\nOwner · CostCenter"]
+        end
+    end
+
+    subgraph CICD ["CI/CD"]
+        GH["GitHub Actions"]
+        BICEP["Bicep IaC\nsingle template"]
+        GH --> BICEP --> AZURE
+    end
+
+    User --> FE
+    FE -->|"HTTPS + JWT"| PROD
+    PROD --> DB
+    PROD -->|"Managed identity"| KV
+    PROD --> AI
+    AI --> LA
 ```
-
-Suggested speaker notes:
-- React app calls secured API
-- API stores and reads data from database
-- Key Vault provides managed secret access
-- Bicep makes the environment reproducible and auditable
-- App Insights / Log Analytics provide operational evidence
 
 ---
 
-## 3) Security control diagram
+## 3. Security control flow
 
-Use on: Slide 5 (Security and compliance)
+> 📺 Use in: **Segment 3** (6:00–10:00) — show briefly while introducing STRIDE
 
 ```mermaid
 flowchart LR
-    U[User] --> FE[Frontend]
-    FE --> API[ASP.NET Core API]
-    API --> AUTH[JWT authentication\nRole validation]
-    AUTH --> RBAC[Requester cannot approve\nReject requires comment\nBackend enforcement]
-    RBAC --> SEC[Security headers\nHTTPS-only\nTLS 1.2\nHSTS]
-    SEC --> KV[Secrets in Key Vault\nManaged identity access]
-    KV --> AZ[Azure resource protections]
+    U["👤 Request"] -->|HTTPS + HSTS\nTLS 1.2 min| API["ASP.NET Core API"]
 
-    API --> AUDIT[Audit event log]
-    AUDIT --> COMP[Compliance evidence\ntraceability\nleast privilege]
+    API --> JWT["JWT validation\nSignature verified\nagainst Key Vault key"]
+    JWT --> RBAC["Role authorisation\nRequester → read/submit\nApprover → decide only"]
+    RBAC --> BIZ["Business rules\nComment required\nInsert-only audit log"]
+
+    API --> HDR["HTTP security headers\nCSP · X-Frame-Options\nReferrer-Policy\nPermissions-Policy"]
+
+    BIZ --> DB[("Database\nImmutable audit trail")]
+    BIZ --> AI["App Insights\nCustom event per decision"]
+
+    subgraph INFRA ["Infrastructure controls"]
+        KV["Key Vault\nManaged identity only"]
+        STOR["Storage\nPublic access disabled"]
+        FTPS["App Service\nFTPS-only · Always HTTPS"]
+    end
 ```
-
-Suggested speaker notes:
-- Security is enforced in the API, not just in the UI
-- This is important because it demonstrates real governance controls
-- Useful frame for GDPR / internal control narratives
 
 ---
 
-## 4) Monitoring and health diagram
+## 4. Performance and monitoring
 
-Use on: Slide 7 (Performance and monitoring)
+> 📺 Use in: **Segment 5** (14:00–16:30) — show while discussing autoscale
 
 ```mermaid
 flowchart TB
-    LB[Azure App Service / Health Probe] --> HZ[/healthz]
-    LB --> RD[/readyz]
-    HZ --> API[API service]
-    RD --> API
+    subgraph DB_LAYER ["Database layer"]
+        IDX["Explicit indexes\nStatus · CreatedUtc\nRiskScore · RequestId+CreatedUtc"]
+        PROJ["Single-query EF Core projection\nNo N+1 · No C# mapping"]
+        AGG["DB-level aggregation\nCOUNT + AVG on SQL engine"]
+        CACHE["30s output cache\non summary endpoint"]
+    end
 
-    API --> AI[Application Insights]
-    AI --> METRICS[Request rate\nLatency\nFailures]
+    subgraph APP_LAYER ["Application layer"]
+        HZ["/healthz\nLiveness probe"]
+        RDY["/readyz\nReadiness — queries DB directly"]
+    end
 
-    API --> SCALE[Autoscale rules]
-    SCALE --> CPU[CPU > 70% for 5 min\nScale out]
-    CPU --> APP[More instances]
-    SCALE --> LOW[CPU < 30% for 10 min\nScale in]
+    subgraph AZURE_OBS ["Azure observability"]
+        AI["Application Insights\nRequest rate · Latency · Errors\n+ Custom business events"]
+        AS["Autoscale\nCPU > 70% → scale out\nCPU < 30% → scale in\nMax 3 instances"]
+        ALT["CPU alert\nSeverity 2 at threshold breach"]
+    end
 
-    API --> ALERT[CPU alert severity 2]
+    DB_LAYER --> APP_LAYER --> AZURE_OBS
 ```
-
-Suggested speaker notes:
-- Health endpoints make the app operationally monitorable
-- App Service uses the health endpoint to reduce downtime risk
-- Autoscaling and alerting are real cloud controls, not just conceptual
 
 ---
 
-## 5) Cost governance / resource ownership diagram
+## 5. Cost governance
 
-Use on: Slide 8 (Cost management)
+> 📺 Use in: **Segment 6** (16:30–18:30) — show while discussing tags
 
 ```mermaid
 flowchart LR
-    R1[App Service Plan S1] --> T[Tags\nApplication\nEnvironment\nOwner\nCostCenter]
-    R2[Azure SQL Basic] --> T
-    R3[Storage Account LRS] --> T
-    R4[Key Vault] --> T
-    R5[Monitor resources] --> T
+    subgraph RESOURCES ["Deployed resources"]
+        R1["App Service\nStandard S1\n(min autoscale tier)"]
+        R2["Azure SQL\nBasic 5 DTU"]
+        R3["Blob Storage\nLRS"]
+        R4["Key Vault"]
+        R5["App Insights\nLog Analytics"]
+    end
 
-    T --> C[Cost visibility\nChargeback\nBudgeting]
-    C --> A[Autoscale reduces idle spend]
-    A --> S[Right-sized, cloud-aware design]
+    subgraph TAGS ["Resource tags (all resources)"]
+        T1["Application: cloudsec"]
+        T2["Environment: dev"]
+        T3["Owner: engineering"]
+        T4["CostCenter: cloud-module"]
+    end
+
+    subgraph CONTROLS ["Cost controls"]
+        AUTO["Autoscale\n1 instance at idle\nscales on real load"]
+        BUDGET["Azure Budget\n$30/month cap\n80% + 100% alerts"]
+        FUTURE["Future: Reserved Instances\n72% discount (1–3yr commit)\nvia Azure billing — not Bicep"]
+    end
+
+    RESOURCES --> TAGS --> CONTROLS
 ```
 
-Suggested speaker notes:
-- Budget controls start with tagging and visibility
-- Right-sized resources are cheaper and easier to justify
-- Autoscale prevents paying for more capacity than needed
-
 ---
 
-## 6) Simple presentation placement guide
+## Segment placement guide
 
-Use these in the final deck:
-
-- Slide 2: Business problem / before vs after workflow
-- Slide 4: System architecture diagram
-- Slide 5: Security control diagram
-- Slide 7: Monitoring and health diagram
-- Slide 8: Cost governance diagram
-
-Optional extras if you want a fuller deck:
-- Add the architecture diagram to the appendix or final slide as a backup
-- Add a second small diagram on Slide 6 showing the user workflow: Requester -> Approve/Reject -> Audit log
-
----
-
-## 7) Best practice for the actual presentation
-
-Keep the diagrams:
-- high-contrast
-- large enough to read on screen
-- low text density
-- explicitly tied to a business or security point
-
-Avoid:
-- giant dense UML diagrams
-- many service boxes with tiny labels
-- decorative architecture with no explanation
-
-The best diagrams for this assessment are:
-- business workflow
-- architecture overview
-- security controls
-- monitoring / autoscaling
-- cost governance
-
-These are all directly tied to the brief and will read as genuine engineering evidence.
+| Diagram | Segment | Timestamp | Purpose |
+|---|---|---|---|
+| Business problem | 1 | 0:00–2:00 | Frame the governance problem |
+| System architecture | 2 | 2:00–6:00 | Walk through deployed components |
+| Security control flow | 3 | 6:00–10:00 | Introduce STRIDE mitigations |
+| Performance & monitoring | 5 | 14:00–16:30 | Show autoscale and observability |
+| Cost governance | 6 | 16:30–18:30 | Show tagging and budget controls |
