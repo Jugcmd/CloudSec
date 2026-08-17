@@ -106,6 +106,18 @@ jobs:
           echo "frontend_url=$FRONTEND_URL" >> "$GITHUB_OUTPUT"
           echo "key_vault_name=$KEY_VAULT_NAME" >> "$GITHUB_OUTPUT"
 
+      - name: Grant App Service Key Vault Access Policy
+        run: |
+          PRINCIPAL_ID=$(az webapp identity show \
+            --resource-group "$RG_NAME" \
+            --name "${{ steps.infra.outputs.api_app_name }}" \
+            --query principalId -o tsv)
+
+          az keyvault set-policy \
+            --name "${{ steps.infra.outputs.key_vault_name }}" \
+            --object-id "$PRINCIPAL_ID" \
+            --secret-permissions get list
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
