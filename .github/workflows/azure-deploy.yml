@@ -63,7 +63,17 @@ jobs:
 
       - name: Ensure Resource Group
         run: |
-          az group create --name "$RG_NAME" --location "$LOCATION"
+          if ! az group show --name "$RG_NAME" &>/dev/null; then
+            echo "Resource group $RG_NAME does not exist. Attempting to create..."
+            az group create --name "$RG_NAME" --location "$LOCATION" || {
+              echo "ERROR: Could not create resource group."
+              echo "On a managed/university subscription, pre-create it manually with your own account:"
+              echo "  az group create --name $RG_NAME --location $LOCATION"
+              exit 1
+            }
+          else
+            echo "Resource group $RG_NAME already exists, skipping creation."
+          fi
 
       - name: Deploy Infrastructure
         id: infra
