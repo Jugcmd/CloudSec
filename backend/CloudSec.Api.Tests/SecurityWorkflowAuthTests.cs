@@ -34,6 +34,26 @@ public class SecurityWorkflowAuthTests : IClassFixture<TestApiFactory>
     }
 
     [Fact]
+    public async Task Health_Endpoints_Are_Available_And_Ready()
+    {
+        var healthResponse = await _client.GetAsync("/healthz");
+        var readyResponse = await _client.GetAsync("/readyz");
+
+        Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, readyResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Security_Headers_Are_Emitted()
+    {
+        var response = await _client.GetAsync("/healthz");
+
+        Assert.True(response.Headers.Contains("X-Content-Type-Options"));
+        Assert.True(response.Headers.Contains("X-Frame-Options"));
+        Assert.True(response.Headers.Contains("Referrer-Policy"));
+    }
+
+    [Fact]
     public async Task Requester_Can_Create_But_Cannot_Decide()
     {
         var requesterToken = await GetTokenAsync("requester.user@osborneclarke.com", "Requester");

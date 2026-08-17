@@ -8,6 +8,15 @@
     "namePrefix": {
       "value": "cloudsec"
     },
+    "environment": {
+      "value": "dev"
+    },
+    "owner": {
+      "value": "CloudSec"
+    },
+    "costCenter": {
+      "value": "CloudEngineering"
+    },
     "sqlAdminLogin": {
       "value": "cloudsecsqladmin"
     },

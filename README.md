@@ -39,6 +39,8 @@ dotnet test backend/CloudSec.Api.Tests/CloudSec.Api.Tests.csproj
 - `GET /api/SecurityExceptionRequests/summary`
 - `POST /api/SecurityExceptionRequests`
 - `POST /api/SecurityExceptionRequests/{id}/decision`
+- `GET /healthz`
+- `GET /readyz`
 
 ## Auth model (JWT)
 
@@ -128,11 +130,13 @@ This repository now includes:
 
 The baseline deploys:
 
-- Azure App Service Plan (Linux)
+- Azure App Service Plan (Linux) — Standard S1 with autoscale (1–3 instances)
 - App Service for API hosting
 - Azure SQL Server + Azure SQL Database
 - Storage account static website hosting for React frontend
 - Log Analytics workspace + Application Insights
+- Azure Key Vault for secret storage (JWT key and DB connection string)
+- Autoscale rules and CPU metric alert
 
 ### Required GitHub secrets
 
@@ -152,7 +156,7 @@ Set these repository secrets before running the workflow:
 - `namePrefix`
 
 3. Wait for jobs to complete.
-4. Collect workflow summary output URLs for API and frontend.
+4. Collect workflow summary output URLs for API, health, and frontend.
 
 ### Recommended post-deploy checks
 
@@ -165,4 +169,6 @@ Set these repository secrets before running the workflow:
 - App Service configuration
 - SQL database resource
 - Application Insights charts
+- Key Vault resource and secret references
+- Autoscale settings and CPU alert
 - successful workflow run output

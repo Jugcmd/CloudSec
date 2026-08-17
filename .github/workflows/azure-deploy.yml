@@ -84,13 +84,17 @@ jobs:
 
           API_APP_NAME=$(echo "$OUTPUTS" | jq -r '.apiAppName.value')
           API_URL=$(echo "$OUTPUTS" | jq -r '.apiUrl.value')
+          API_HEALTH_URL=$(echo "$OUTPUTS" | jq -r '.apiHealthUrl.value')
           STORAGE_ACCOUNT=$(echo "$OUTPUTS" | jq -r '.frontendStorageAccountName.value')
           FRONTEND_URL=$(echo "$OUTPUTS" | jq -r '.frontendUrl.value')
+          KEY_VAULT_NAME=$(echo "$OUTPUTS" | jq -r '.keyVaultName.value')
 
           echo "api_app_name=$API_APP_NAME" >> "$GITHUB_OUTPUT"
           echo "api_url=$API_URL" >> "$GITHUB_OUTPUT"
+          echo "api_health_url=$API_HEALTH_URL" >> "$GITHUB_OUTPUT"
           echo "storage_account=$STORAGE_ACCOUNT" >> "$GITHUB_OUTPUT"
           echo "frontend_url=$FRONTEND_URL" >> "$GITHUB_OUTPUT"
+          echo "key_vault_name=$KEY_VAULT_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -176,4 +180,6 @@ jobs:
       - name: Deployment Summary
         run: |
           echo "API URL: ${{ steps.infra.outputs.api_url }}"
+          echo "API Health URL: ${{ steps.infra.outputs.api_health_url }}"
           echo "Frontend URL: ${{ steps.infra.outputs.frontend_url }}"
+          echo "Key Vault: ${{ steps.infra.outputs.key_vault_name }}"

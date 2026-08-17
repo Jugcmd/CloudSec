@@ -93,11 +93,55 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHttpsRedirection();
+    app.UseHsts();
 }
+
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var headers = context.Response.Headers;
+        headers["X-Content-Type-Options"] = "nosniff";
+        headers["X-Frame-Options"] = "DENY";
+        headers["Referrer-Policy"] = "no-referrer";
+        headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+        headers["Cross-Origin-Opener-Policy"] = "same-origin";
+        headers["Cross-Origin-Resource-Policy"] = "same-site";
+        headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
+        return Task.CompletedTask;
+    });
+
+    await next();
+});
+
 app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/healthz", () =>
+    Results.Ok(new
+    {
+        status = "Healthy",
+        service = "CloudSec.Api",
+        environment = app.Environment.EnvironmentName
+    }));
+
+app.MapGet("/readyz", async (AppDbContext db, CancellationToken cancellationToken) =>
+{
+    var canConnect = await db.Database.CanConnectAsync(cancellationToken);
+
+    return canConnect
+        ? Results.Ok(new
+        {
+            status = "Ready",
+            database = "Connected"
+        })
+        : Results.Problem(
+            statusCode: StatusCodes.Status503ServiceUnavailable,
+            title: "Not ready",
+            detail: "Database connection is unavailable.");
+});
 
 app.MapControllers();
 
