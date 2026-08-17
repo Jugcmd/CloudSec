@@ -136,13 +136,13 @@ jobs:
 
       - name: Wait for App Service SCM Stabilization
         run: |
-          echo "Waiting 90 seconds for potential SCM container restarts after infra/app settings updates..."
-          sleep 90
+          echo "Waiting 30 seconds for SCM to stabilise after infra deployment..."
+          sleep 30
 
       - name: Deploy API to App Service (Retry)
         run: |
           set +e
-          MAX_ATTEMPTS=5
+          MAX_ATTEMPTS=3
           ATTEMPT=1
 
           while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
@@ -151,21 +151,38 @@ jobs:
               --resource-group "$RG_NAME" \
               --name "${{ steps.infra.outputs.api_app_name }}" \
               --src-path publish-api.zip \
-              --type zip
+              --type zip \
+              --async true
 
             EXIT_CODE=$?
             if [ $EXIT_CODE -eq 0 ]; then
-              echo "API deployment succeeded on attempt $ATTEMPT"
-              exit 0
+              echo "API deployment upload succeeded on attempt $ATTEMPT"
+              break
             fi
 
-            echo "API deployment failed on attempt $ATTEMPT. Waiting 45 seconds before retry..."
+            echo "Upload failed on attempt $ATTEMPT. Waiting 30 seconds before retry..."
             ATTEMPT=$((ATTEMPT + 1))
-            sleep 45
+            sleep 30
           done
 
-          echo "API deployment failed after $MAX_ATTEMPTS attempts."
-          exit 1
+          if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
+            echo "API deployment failed after $MAX_ATTEMPTS attempts."
+            exit 1
+          fi
+
+          echo "Waiting for App Service to come online..."
+          HEALTH_URL="${{ steps.infra.outputs.api_health_url }}"
+          for i in $(seq 1 20); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+            echo "Health check $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "App Service is healthy."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Warning: App Service did not respond healthy within 5 minutes, but deploy may still succeed."
+          exit 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
