@@ -16,6 +16,8 @@ workflow — and to demonstrate cloud architecture, security, performance, and c
 
 ## Slide 2 — Business problem (1:00–3:00)
 
+[Diagram: Before vs after workflow]
+
 "The business problem is familiar in any organisation that manages access, systems, or sensitive data.
 Teams need to request temporary exceptions to security controls — whether that's an outbound firewall rule,
 a privileged access grant, or a temporary data handling deviation.
@@ -26,6 +28,10 @@ record, no risk assessment, and no audit trail.
 
 CloudSec solves that by providing a governed workflow: a user submits a request, the system scores it
 for risk based on data classification, and an approver makes a recorded decision."
+
+Presenter note:
+- The before/after diagram shows the business pain: weak ownership, lack of auditability, inconsistent decisions.
+- This is the business case slide; it is not just about software features.
 
 ---
 
@@ -45,6 +51,8 @@ records not just the outcome, but who made the decision, when, and why."
 ---
 
 ## Slide 4 — Architecture (5:00–8:00)
+
+[Diagram: System architecture overview]
 
 "The architecture follows a standard three-tier model: React frontend, ASP.NET Core API, and a database.
 
@@ -69,9 +77,15 @@ application settings or source code.
 Second, the entire infrastructure is defined as code in a single Bicep template. That means the
 deployment is reproducible, auditable, and versionable."
 
+Presenter note:
+- The architecture diagram is the core technical evidence slide.
+- It shows the app is not just a frontend; it is a cloud-aware stack with managed services, telemetry, and policy-aligned infrastructure.
+
 ---
 
 ## Slide 5 — Security and compliance (8:00–11:00)
+
+[Diagram: Security control flow]
 
 "Security is central to this application, not an afterthought.
 
@@ -95,6 +109,10 @@ modified, and access is strictly role-based.
 While the application does not handle card data, the controls demonstrated here — access control,
 auditability, separation of duties, and encryption in transit — are consistent with PCI DSS
 principles and the kinds of controls an information security team would require."
+
+Presenter note:
+- The security diagram makes the control model easy to explain quickly.
+- This is a key slide for showing that governance and enforcement are not just presentation-level features.
 
 ---
 
@@ -122,6 +140,8 @@ This demonstrates the full governance workflow end to end."
 
 ## Slide 7 — Performance and monitoring (14:30–16:30)
 
+[Diagram: Monitoring and health / autoscale]
+
 "Performance and observability are addressed at two levels: application and infrastructure.
 
 At the application level, the API now has two dedicated endpoints: /healthz which returns a liveness
@@ -140,9 +160,15 @@ genuine load without manual intervention.
 A metric alert fires at severity 2 when CPU consistently exceeds 70 percent, which would allow an
 operator to review whether the scale-out is working as expected."
 
+Presenter note:
+- The health and autoscale diagram helps explain how the app is managed in production.
+- This is a clear operational evidence point and adds credibility to the cloud engineering story.
+
 ---
 
 ## Slide 8 — Cost management (16:30–18:30)
+
+[Diagram: Cost governance and tagged resources]
 
 "Cost management was a conscious design constraint throughout this project.
 
@@ -161,6 +187,10 @@ The scale-in rule returns the plan to a single instance when load drops.
 To extend this further in production I would add an Azure Budget with an alert threshold, and
 consider a scheduled scale-down for out-of-hours periods. But the core pattern — right-sized
 baseline, tagged resources, autoscale — demonstrates cost-aware cloud engineering."
+
+Presenter note:
+- The cost diagram is useful as a governance argument, not just a technical one.
+- It clarifies that the solution is built with operational accountability in mind.
 
 ---
 

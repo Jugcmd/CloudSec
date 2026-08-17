@@ -84,6 +84,135 @@
 
 ---
 
+## Diagram placement and explanation
+
+Use the following diagrams in the deck. Each is intentionally simple and can be drawn as Mermaid markdown in the presentation notes or exported to a slide as a diagram. The diagrams below are also stored in `docs/presentation-diagrams.md`.
+
+### Diagram 1 — Business problem / before vs after
+
+Use on: Slide 2
+
+```mermaid
+flowchart LR
+    A[Manual email / spreadsheet] --> B[Unclear ownership]
+    A --> C[No audit trail]
+    A --> D[No consistent risk review]
+    A --> E[Slow, inconsistent decisions]
+
+    B --> F[CloudSec workflow]
+    C --> F
+    D --> F
+    E --> F
+
+    F --> G[Request submitted]
+    G --> H[Risk scoring]
+    H --> I[Approval / rejection decision]
+    I --> J[Audit log + traceability]
+```
+
+Why it matters:
+- Shows the current pain clearly
+- Frames the app as a governance improvement, not just a feature list
+- Explains the problem in a way a non-technical audience understands
+
+### Diagram 2 — Core architecture
+
+Use on: Slide 4
+
+```mermaid
+flowchart TB
+    U[User / Requester / Approver] --> FE[React Frontend\nAzure App Service / static hosting]
+    FE --> API[ASP.NET Core API\nAzure App Service]
+    API --> DB[(SQLite in dev\nAzure SQL in prod)]
+    API --> KV[Azure Key Vault\nJWT secret + DB connection]
+    API --> AI[Application Insights\nLogs + telemetry]
+    API --> LA[Log Analytics]
+    FE --> AI
+
+    GH[GitHub Actions] --> BICEP[Bicep Infrastructure as Code]
+    BICEP --> AZ[Azure Resources\nApp Service, SQL, Storage, Key Vault, Monitor]
+    AZ --> API
+    AZ --> DB
+    AZ --> KV
+```
+
+Why it matters:
+- Demonstrates a realistic cloud architecture
+- Proves the system is designed as a three-tier application with production-minded monitoring and secrets management
+- Supports the architecture rubric by showing the service choices and Azure context
+
+### Diagram 3 — Security control flow
+
+Use on: Slide 5
+
+```mermaid
+flowchart LR
+    U[User] --> FE[Frontend]
+    FE --> API[ASP.NET Core API]
+    API --> AUTH[JWT authentication\nRole validation]
+    AUTH --> RBAC[Requester cannot approve\nReject requires comment\nBackend enforcement]
+    RBAC --> SEC[HTTP security headers\nHTTPS-only\nTLS 1.2\nHSTS]
+    SEC --> KV[Secrets in Key Vault\nManaged identity access]
+    KV --> AZ[Azure resource protections]
+
+    API --> AUDIT[Audit event log]
+    AUDIT --> COMP[Compliance evidence\ntraceability\nleast privilege]
+```
+
+Why it matters:
+- Shows that security is enforced in the backend rather than only in the UI
+- Directly supports the security and compliance narrative
+- Demonstrates least privilege, auditable decisions, and operational controls
+
+### Diagram 4 — Monitoring and health / autoscale
+
+Use on: Slide 7
+
+```mermaid
+flowchart TB
+    LB[Azure App Service / Health Probe] --> HZ[/healthz]
+    LB --> RD[/readyz]
+    HZ --> API[API service]
+    RD --> API
+
+    API --> AI[Application Insights]
+    AI --> METRICS[Request rate\nLatency\nFailures]
+
+    API --> SCALE[Autoscale rules]
+    SCALE --> CPU[CPU > 70% for 5 min\nScale out]
+    CPU --> APP[More instances]
+    SCALE --> LOW[CPU < 30% for 10 min\nScale in]
+
+    API --> ALERT[CPU alert severity 2]
+```
+
+Why it matters:
+- Shows the application has health checks and operation-aware design
+- Demonstrates observability and production readiness
+- Supports the performance and optimisation theme with evidence beyond a single demo
+
+### Diagram 5 — Cost management and governance
+
+Use on: Slide 8
+
+```mermaid
+flowchart LR
+    R1[App Service Plan S1] --> T[Tags\nApplication\nEnvironment\nOwner\nCostCenter]
+    R2[Azure SQL Basic] --> T
+    R3[Storage Account LRS] --> T
+    R4[Key Vault] --> T
+    R5[Monitor resources] --> T
+
+    T --> C[Cost visibility\nChargeback\nBudgeting]
+    C --> A[Autoscale reduces idle spend]
+    A --> S[Right-sized, cloud-aware design]
+```
+
+Why it matters:
+- Demonstrates that cost is part of the design, not an afterthought
+- Shows the importance of tags and resource accountability
+- Helps connect technical choices to governance and responsible cloud operations
+
 ## Evidence capture checklist
 
 Capture these before recording:
