@@ -294,42 +294,36 @@ function App() {
 
         <div className="topnav-right">
           <div className="topnav-pill">
-            <div>
-              <label>Acting as</label>
-              <input
-                type="email"
-                value={session.email}
-                onChange={(event) =>
-                  setSession((current) => ({ ...current, email: event.target.value }))
-                }
-                placeholder="user@example.com"
-              />
-            </div>
-          </div>
-
-          <div className="topnav-pill">
-            <div>
-              <label>Role</label>
-              <select
-                value={session.role}
-                onChange={(event) =>
-                  setSession((current) => ({
-                    ...current,
-                    role: event.target.value as SessionRole,
-                  }))
-                }
-              >
-                <option value="Requester">Requester</option>
-                <option value="Approver">Approver</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="topnav-pill">
-            <div
-              className={`auth-status-dot ${session.accessToken ? "active" : ""}`}
+            <label>Acting as</label>
+            <input
+              type="email"
+              value={session.email}
+              onChange={(event) =>
+                setSession((current) => ({ ...current, email: event.target.value }))
+              }
+              placeholder="user@example.com"
             />
-            <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
+          </div>
+
+          <div className="topnav-pill">
+            <label>Role</label>
+            <select
+              value={session.role}
+              onChange={(event) =>
+                setSession((current) => ({
+                  ...current,
+                  role: event.target.value as SessionRole,
+                }))
+              }
+            >
+              <option value="Requester">Requester</option>
+              <option value="Approver">Approver</option>
+            </select>
+          </div>
+
+          <div className="topnav-status">
+            <div className={`auth-status-dot ${session.accessToken ? "active" : ""}`} />
+            <span className="topnav-status-text">
               {session.accessToken ? session.role : "Signed out"}
             </span>
           </div>
@@ -500,7 +494,7 @@ function App() {
                 <article key={item.id} className="request-card">
                   <div className="request-card-top">
                     <span className="request-card-title">{item.title}</span>
-                    <div style={{ display: "flex", gap: "6px", alignItems: "center", flexShrink: 0 }}>
+                    <div className="badge-row">
                       <span className={`risk-badge ${riskClass(item.riskScore)}`}>
                         {item.riskScore}
                       </span>
