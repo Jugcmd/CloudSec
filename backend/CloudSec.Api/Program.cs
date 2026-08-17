@@ -80,6 +80,14 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
+
+// Response caching for read-heavy summary endpoint
+builder.Services.AddResponseCaching();
+builder.Services.AddOutputCache(options =>
+{
+    options.AddPolicy("summary", p => p.Expire(TimeSpan.FromSeconds(30)));
+});
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -115,6 +123,8 @@ app.Use(async (context, next) =>
 });
 
 app.UseCors("Frontend");
+app.UseResponseCaching();
+app.UseOutputCache();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -160,5 +170,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+public partial class Program;
+
 
 public partial class Program;

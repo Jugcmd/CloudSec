@@ -341,6 +341,44 @@ resource highCpuAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
   }
 }
 
+@description('Monthly budget in USD for cost alerting. Defaults to $30 which is appropriate for this workload.')
+param monthlyBudgetAmountUsd int = 30
+
+resource budget 'Microsoft.Consumption/budgets@2021-10-01' = {
+  name: '${normalizedPrefix}-monthly-budget'
+  properties: {
+    category: 'Cost'
+    amount: monthlyBudgetAmountUsd
+    timeGrain: 'Monthly'
+    timePeriod: {
+      startDate: '${take(utcNow('yyyy-MM'), 7)}-01'
+    }
+    filter: {
+      dimensions: {
+        name: 'ResourceGroupName'
+        operator: 'In'
+        values: [resourceGroup().name]
+      }
+    }
+    notifications: {
+      atEightyPercent: {
+        enabled: true
+        operator: 'GreaterThan'
+        threshold: 80
+        contactEmails: []
+        thresholdType: 'Actual'
+      }
+      atOneHundredPercent: {
+        enabled: true
+        operator: 'GreaterThan'
+        threshold: 100
+        contactEmails: []
+        thresholdType: 'Actual'
+      }
+    }
+  }
+}
+
 output apiAppName string = apiApp.name
 output apiUrl string = 'https://${apiApp.properties.defaultHostName}'
 output apiHealthUrl string = 'https://${apiApp.properties.defaultHostName}/healthz'

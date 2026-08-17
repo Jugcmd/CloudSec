@@ -2,6 +2,7 @@ using CloudSec.Api.Data;
 using CloudSec.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -18,61 +19,60 @@ public class SecurityExceptionRequestsController(AppDbContext db) : ControllerBa
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<SecurityExceptionRequestViewDto>>> GetAll(CancellationToken cancellationToken)
     {
-        var requests = await db.SecurityExceptionRequests
+        // Project directly in the query — avoids loading full entities into memory
+        var output = await db.SecurityExceptionRequests
             .OrderByDescending(x => x.CreatedUtc)
+            .Select(request => new SecurityExceptionRequestViewDto
+            {
+                Id = request.Id,
+                Title = request.Title,
+                Description = request.Description,
+                RequesterEmail = request.RequesterEmail,
+                SystemName = request.SystemName,
+                DataClassification = request.DataClassification,
+                Status = request.Status,
+                RiskScore = request.RiskScore,
+                CreatedUtc = request.CreatedUtc,
+                UpdatedUtc = request.UpdatedUtc,
+                Events = request.Events
+                    .OrderBy(e => e.CreatedUtc)
+                    .Select(e => new SecurityExceptionEventDto
+                    {
+                        Id = e.Id,
+                        EventType = e.EventType,
+                        FromStatus = e.FromStatus,
+                        ToStatus = e.ToStatus,
+                        ActorEmail = e.ActorEmail,
+                        Comment = e.Comment,
+                        CreatedUtc = e.CreatedUtc
+                    }).ToList()
+            })
             .ToListAsync(cancellationToken);
-
-        var requestIds = requests.Select(x => x.Id).ToArray();
-
-        var events = await db.SecurityExceptionEvents
-            .Where(x => requestIds.Contains(x.RequestId))
-            .OrderBy(x => x.CreatedUtc)
-            .ToListAsync(cancellationToken);
-
-        var eventsByRequest = events
-            .GroupBy(x => x.RequestId)
-            .ToDictionary(g => g.Key, g => g.Select(MapEvent).ToList());
-
-        var output = requests.Select(request => new SecurityExceptionRequestViewDto
-        {
-            Id = request.Id,
-            Title = request.Title,
-            Description = request.Description,
-            RequesterEmail = request.RequesterEmail,
-            SystemName = request.SystemName,
-            DataClassification = request.DataClassification,
-            Status = request.Status,
-            RiskScore = request.RiskScore,
-            CreatedUtc = request.CreatedUtc,
-            UpdatedUtc = request.UpdatedUtc,
-            Events = eventsByRequest.TryGetValue(request.Id, out var requestEvents)
-                ? requestEvents
-                : []
-        }).ToList();
 
         return Ok(output);
     }
 
     [Authorize(Roles = RequesterRole + "," + ApproverRole)]
     [HttpGet("summary")]
+    [OutputCache(PolicyName = "summary")]
     public async Task<ActionResult<SecurityExceptionSummaryDto>> GetSummary(CancellationToken cancellationToken)
     {
-        var requests = await db.SecurityExceptionRequests.ToListAsync(cancellationToken);
-        var events = await db.SecurityExceptionEvents.ToListAsync(cancellationToken);
-
-        var totalRequests = requests.Count;
-        var pendingRequests = requests.Count(x => string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase));
-        var approvedRequests = requests.Count(x => string.Equals(x.Status, "Approved", StringComparison.OrdinalIgnoreCase));
-        var rejectedRequests = requests.Count(x => string.Equals(x.Status, "Rejected", StringComparison.OrdinalIgnoreCase));
-        var highRiskRequests = requests.Count(x => x.RiskScore >= 70);
+        // Aggregate in the database rather than loading all rows into memory
+        var totalRequests = await db.SecurityExceptionRequests.CountAsync(cancellationToken);
+        var pendingRequests = await db.SecurityExceptionRequests.CountAsync(x => x.Status == "Pending", cancellationToken);
+        var approvedRequests = await db.SecurityExceptionRequests.CountAsync(x => x.Status == "Approved", cancellationToken);
+        var rejectedRequests = await db.SecurityExceptionRequests.CountAsync(x => x.Status == "Rejected", cancellationToken);
+        var highRiskRequests = await db.SecurityExceptionRequests.CountAsync(x => x.RiskScore >= 70, cancellationToken);
         var averageRiskScore = totalRequests == 0
             ? 0
-            : Math.Round(requests.Average(x => x.RiskScore), 1);
+            : Math.Round(await db.SecurityExceptionRequests.AverageAsync(x => (double)x.RiskScore, cancellationToken), 1);
 
-        var decisionEventsLast7Days = events.Count(x =>
-            (string.Equals(x.EventType, "Approved", StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(x.EventType, "Rejected", StringComparison.OrdinalIgnoreCase)) &&
-            x.CreatedUtc >= DateTime.UtcNow.AddDays(-7));
+        var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+        var decisionEventsLast7Days = await db.SecurityExceptionEvents
+            .CountAsync(x =>
+                (x.EventType == "Approved" || x.EventType == "Rejected") &&
+                x.CreatedUtc >= sevenDaysAgo,
+                cancellationToken);
 
         var approvalRate = (approvedRequests + rejectedRequests) == 0
             ? 0

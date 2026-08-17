@@ -36,4 +36,7 @@ public class SecurityExceptionRequest
 
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedUtc { get; set; } = DateTime.UtcNow;
+
+    // Navigation property — enables single-query projection in GetAll
+    public ICollection<SecurityExceptionEvent> Events { get; set; } = [];
 }
