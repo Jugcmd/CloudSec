@@ -412,6 +412,9 @@ resource highCpuAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
 @description('Monthly budget in USD for cost alerting. Defaults to $30 which is appropriate for this workload.')
 param monthlyBudgetAmountUsd int = 30
 
+@description('Email address to receive budget alert notifications.')
+param budgetAlertEmail string = 'admin@example.com'
+
 @description('Budget start date in YYYY-MM-DD format. Defaults to the first day of the current month.')
 param budgetStartDate string = utcNow('yyyy-MM-01')
 
@@ -436,14 +439,14 @@ resource budget 'Microsoft.Consumption/budgets@2021-10-01' = {
         enabled: true
         operator: 'GreaterThan'
         threshold: 80
-        contactEmails: []
+        contactEmails: [budgetAlertEmail]
         thresholdType: 'Actual'
       }
       atOneHundredPercent: {
         enabled: true
         operator: 'GreaterThan'
         threshold: 100
-        contactEmails: []
+        contactEmails: [budgetAlertEmail]
         thresholdType: 'Actual'
       }
     }

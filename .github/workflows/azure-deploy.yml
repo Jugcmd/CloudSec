@@ -85,7 +85,8 @@ jobs:
             --parameters @infra/main.parameters.json \
             --parameters location="$LOCATION" namePrefix="$NAME_PREFIX" \
             --parameters sqlAdminPassword="${{ secrets.SQL_ADMIN_PASSWORD }}" \
-            --parameters jwtSigningKey="${{ secrets.JWT_SIGNING_KEY }}"
+            --parameters jwtSigningKey="${{ secrets.JWT_SIGNING_KEY }}" \
+            --parameters budgetAlertEmail="${{ secrets.BUDGET_ALERT_EMAIL }}"
 
           OUTPUTS=$(az deployment group show \
             --resource-group "$RG_NAME" \
