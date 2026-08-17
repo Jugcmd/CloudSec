@@ -58,7 +58,7 @@ records not just the outcome, but who made the decision, when, and why."
 
 In development I use SQLite for simplicity. In production, the Azure deployment baseline switches
 automatically to Azure SQL Server via configuration, which shows the database layer is abstracted
-correctly.
+correctly — a principle aligned with the twelve-factor app methodology (Wiggins, 2017).
 
 On Azure, the deployment includes:
 - App Service on Standard S1 for the API
@@ -72,14 +72,23 @@ On Azure, the deployment includes:
 I want to highlight two specific design choices. First, the App Service uses a System-Assigned Managed
 Identity, and all secrets — the JWT signing key and the database connection string — are stored in
 Key Vault. The App Service fetches them at runtime via Key Vault references. No secrets are in
-application settings or source code.
+application settings or source code, consistent with OWASP Secrets Management guidance (OWASP, 2021).
 
 Second, the entire infrastructure is defined as code in a single Bicep template. That means the
-deployment is reproducible, auditable, and versionable."
+deployment is reproducible, auditable, and versionable — this is a core DevOps practice described
+by Kim et al. (2016) in The DevOps Handbook.
+
+On environmental impact: Azure operates with a commitment to carbon neutrality and runs on
+increasingly renewable energy. By using managed PaaS services rather than self-managed VMs,
+and by implementing autoscaling to avoid idle over-provisioning, this solution minimises its
+compute footprint. Microsoft (2023) reports that cloud workloads on Azure can be up to 93% more
+energy efficient than equivalent on-premises deployments. The right-sizing approach used here
+directly reduces unnecessary resource consumption."
 
 Presenter note:
 - The architecture diagram is the core technical evidence slide.
 - It shows the app is not just a frontend; it is a cloud-aware stack with managed services, telemetry, and policy-aligned infrastructure.
+- Environmental impact must be mentioned here — it is explicitly called out in the brief.
 
 ---
 
@@ -178,19 +187,25 @@ scaling. The SQL Database is Basic tier, appropriate for the workload. Storage u
 
 All resources are tagged with Application, Environment, Owner, and CostCenter tags. This means
 every Azure resource in the deployment is identifiable and attributable, which is the foundation
-of cost governance. In a real deployment, those tags would feed into cost management views,
-chargebacks, and budget policies.
+of cost governance. In a real deployment, those tags would feed into Azure Cost Management views,
+chargebacks, and budget policies (Microsoft Azure, 2024).
 
 Autoscaling is a direct cost control: the system does not maintain more instances than it needs.
 The scale-in rule returns the plan to a single instance when load drops.
 
-To extend this further in production I would add an Azure Budget with an alert threshold, and
-consider a scheduled scale-down for out-of-hours periods. But the core pattern — right-sized
-baseline, tagged resources, autoscale — demonstrates cost-aware cloud engineering."
+For a production deployment I would also consider Reserved Instances for the App Service Plan,
+which Microsoft offers at up to 72% discount compared to pay-as-you-go pricing for predictable
+baseline workloads (Microsoft Azure, 2024). Spot instances would be appropriate for
+non-critical batch processing tasks if the application were extended to include them.
+
+The core pattern here — right-sized baseline, tagged resources, autoscale, with a path to reserved
+capacity — demonstrates cost-aware cloud engineering aligned with the FinOps Foundation principles
+(FinOps Foundation, 2023)."
 
 Presenter note:
 - The cost diagram is useful as a governance argument, not just a technical one.
 - It clarifies that the solution is built with operational accountability in mind.
+- Must mention reserved/spot instances — the brief explicitly calls these out.
 
 ---
 
@@ -227,3 +242,21 @@ It is a small application by design — but it is not a toy. It reflects the kin
 governance tooling a professional services organisation would actually build and operate.
 
 Thank you."
+
+---
+
+## References (for submission document — Harvard format)
+
+These should be included in the document you submit to Turnitin alongside the recording link.
+Cite them verbally in the recording as "(Author, Year)" when making key claims.
+
+- FinOps Foundation (2023) *FinOps Framework*. Available at: https://www.finops.org/framework/ (Accessed: 17 August 2026).
+- Kim, G., Humble, J., Debois, P. and Willis, J. (2016) *The DevOps Handbook*. Portland: IT Revolution Press.
+- Microsoft Azure (2023) *Sustainability and Azure*. Available at: https://azure.microsoft.com/en-us/explore/global-infrastructure/sustainability/ (Accessed: 17 August 2026).
+- Microsoft Azure (2024) *Azure Reserved VM Instances*. Available at: https://azure.microsoft.com/en-us/pricing/reserved-vm-instances/ (Accessed: 17 August 2026).
+- Microsoft Azure (2024) *Azure Cost Management and Billing documentation*. Available at: https://learn.microsoft.com/en-us/azure/cost-management-billing/ (Accessed: 17 August 2026).
+- OWASP (2021) *OWASP Cheat Sheet Series: Secrets Management*. Available at: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html (Accessed: 17 August 2026).
+- Wiggins, A. (2017) *The Twelve-Factor App*. Available at: https://12factor.net (Accessed: 17 August 2026).
+- National Cyber Security Centre (2023) *10 Steps to Cyber Security*. Available at: https://www.ncsc.gov.uk/collection/10-steps (Accessed: 17 August 2026).
+- Information Commissioner's Office (2024) *Guide to the UK GDPR*. Available at: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/ (Accessed: 17 August 2026).
+- Armbrust, M. et al. (2010) 'A view of cloud computing', *Communications of the ACM*, 53(4), pp. 50–58.

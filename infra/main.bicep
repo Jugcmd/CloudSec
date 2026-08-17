@@ -35,8 +35,9 @@ param owner string = 'CloudSec'
 param costCenter string = 'CloudEngineering'
 
 var normalizedPrefix = toLower(namePrefix)
+var uniqueSuffix = take(uniqueString(resourceGroup().id), 6)
 var appServicePlanName = '${normalizedPrefix}-asp'
-var apiAppName = '${normalizedPrefix}-api'
+var apiAppName = '${normalizedPrefix}-api-${uniqueSuffix}'
 var sqlServerName = '${normalizedPrefix}-sql-${uniqueString(resourceGroup().id)}'
 var sqlDatabaseName = 'cloudsecdb'
 var storageName = toLower('${take(normalizedPrefix, 10)}st${take(uniqueString(resourceGroup().id), 10)}')
