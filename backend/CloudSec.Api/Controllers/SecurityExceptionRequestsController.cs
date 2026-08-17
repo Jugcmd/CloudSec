@@ -1,5 +1,6 @@
 using CloudSec.Api.Data;
 using CloudSec.Api.Models;
+using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -10,7 +11,7 @@ namespace CloudSec.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SecurityExceptionRequestsController(AppDbContext db) : ControllerBase
+public class SecurityExceptionRequestsController(AppDbContext db, TelemetryClient telemetry) : ControllerBase
 {
     private const string RequesterRole = "Requester";
     private const string ApproverRole = "Approver";
@@ -130,6 +131,18 @@ public class SecurityExceptionRequestsController(AppDbContext db) : ControllerBa
 
         await db.SaveChangesAsync(cancellationToken);
 
+        // Custom telemetry: track business-level event and risk score metric in App Insights
+        telemetry.TrackEvent("ExceptionRequestSubmitted", new Dictionary<string, string>
+        {
+            ["dataClassification"] = entity.DataClassification,
+            ["systemName"] = entity.SystemName,
+            ["requesterEmail"] = entity.RequesterEmail
+        });
+        telemetry.TrackMetric("ExceptionRequest.RiskScore", entity.RiskScore, new Dictionary<string, string>
+        {
+            ["dataClassification"] = entity.DataClassification
+        });
+
         return CreatedAtAction(nameof(GetAll), new { id = entity.Id }, entity);
     }
 
@@ -189,6 +202,19 @@ public class SecurityExceptionRequestsController(AppDbContext db) : ControllerBa
         });
 
         await db.SaveChangesAsync(cancellationToken);
+
+        // Custom telemetry: track decision outcome with risk context
+        telemetry.TrackEvent("ExceptionRequestDecision", new Dictionary<string, string>
+        {
+            ["decision"] = toStatus,
+            ["dataClassification"] = entity.DataClassification,
+            ["riskScore"] = entity.RiskScore.ToString(),
+            ["approverEmail"] = callerEmail
+        });
+        telemetry.TrackMetric("ExceptionRequest.DecisionRiskScore", entity.RiskScore, new Dictionary<string, string>
+        {
+            ["decision"] = toStatus
+        });
 
         var events = await db.SecurityExceptionEvents
             .Where(x => x.RequestId == entity.Id)

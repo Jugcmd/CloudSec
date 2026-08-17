@@ -253,6 +253,83 @@ resource apiAppSecretAccess 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-01
   }
 }
 
+// Staging deployment slot — enables zero-downtime blue/green deployments
+resource stagingSlot 'Microsoft.Web/sites/slots@2023-12-01' = {
+  parent: apiApp
+  name: 'staging'
+  location: location
+  tags: resourceTags
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    serverFarmId: appServicePlan.id
+    httpsOnly: true
+    siteConfig: {
+      linuxFxVersion: 'DOTNETCORE|10.0'
+      alwaysOn: false
+      ftpsState: 'FtpsOnly'
+      minTlsVersion: '1.2'
+      healthCheckPath: '/healthz'
+      appSettings: [
+        {
+          name: 'ASPNETCORE_ENVIRONMENT'
+          value: 'Staging'
+        }
+        {
+          name: 'DatabaseProvider'
+          value: 'SqlServer'
+        }
+        {
+          name: 'ConnectionStrings__DefaultConnection'
+          value: '@Microsoft.KeyVault(SecretUri=${sqlConnectionStringSecret.properties.secretUriWithVersion})'
+        }
+        {
+          name: 'Jwt__Issuer'
+          value: jwtIssuer
+        }
+        {
+          name: 'Jwt__Audience'
+          value: jwtAudience
+        }
+        {
+          name: 'Jwt__SigningKey'
+          value: '@Microsoft.KeyVault(SecretUri=${jwtSigningKeySecret.properties.secretUriWithVersion})'
+        }
+        {
+          name: 'Cors__AllowedOrigins__0'
+          value: frontendOrigin
+        }
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: appInsights.properties.ConnectionString
+        }
+      ]
+    }
+  }
+}
+
+// Grant staging slot managed identity access to Key Vault secrets
+resource stagingSlotSecretAccess 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-01' = {
+  parent: keyVault
+  name: 'add'
+  dependsOn: [apiAppSecretAccess]
+  properties: {
+    accessPolicies: [
+      {
+        tenantId: subscription().tenantId
+        objectId: stagingSlot.identity.principalId
+        permissions: {
+          secrets: [
+            'get'
+            'list'
+          ]
+        }
+      }
+    ]
+  }
+}
+
 resource appServiceScaleProfile 'Microsoft.Insights/autoscaleSettings@2022-10-01' = {
   name: '${appServicePlanName}-autoscale'
   location: location

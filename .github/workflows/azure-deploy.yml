@@ -139,7 +139,7 @@ jobs:
           echo "Waiting 30 seconds for SCM to stabilise after infra deployment..."
           sleep 30
 
-      - name: Deploy API to App Service (Retry)
+      - name: Deploy API to Staging Slot
         run: |
           set +e
           MAX_ATTEMPTS=3
@@ -150,13 +150,14 @@ jobs:
             az webapp deploy \
               --resource-group "$RG_NAME" \
               --name "${{ steps.infra.outputs.api_app_name }}" \
+              --slot staging \
               --src-path publish-api.zip \
               --type zip \
               --async true
 
             EXIT_CODE=$?
             if [ $EXIT_CODE -eq 0 ]; then
-              echo "API deployment upload succeeded on attempt $ATTEMPT"
+              echo "Staging deployment upload succeeded on attempt $ATTEMPT"
               break
             fi
 
@@ -166,23 +167,30 @@ jobs:
           done
 
           if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
-            echo "API deployment failed after $MAX_ATTEMPTS attempts."
+            echo "Staging deployment failed after $MAX_ATTEMPTS attempts."
             exit 1
           fi
 
-          echo "Waiting for App Service to come online..."
-          HEALTH_URL="${{ steps.infra.outputs.api_health_url }}"
+          echo "Waiting for staging slot to become healthy..."
+          STAGING_HEALTH="https://${{ steps.infra.outputs.api_app_name }}-staging.azurewebsites.net/healthz"
           for i in $(seq 1 20); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
-            echo "Health check $i: HTTP $STATUS"
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_HEALTH" || echo "000")
+            echo "Staging health check $i: HTTP $STATUS"
             if [ "$STATUS" = "200" ]; then
-              echo "App Service is healthy."
-              exit 0
+              echo "Staging slot is healthy — proceeding to swap."
+              break
             fi
             sleep 15
           done
-          echo "Warning: App Service did not respond healthy within 5 minutes, but deploy may still succeed."
-          exit 0
+
+      - name: Swap Staging to Production
+        run: |
+          az webapp deployment slot swap \
+            --resource-group "$RG_NAME" \
+            --name "${{ steps.infra.outputs.api_app_name }}" \
+            --slot staging \
+            --target-slot production
+          echo "Slot swap complete — production is now running the new deployment."
 
       - name: Setup Node
         uses: actions/setup-node@v4

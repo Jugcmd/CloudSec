@@ -1,4 +1,5 @@
 using CloudSec.Api.Data;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -80,6 +81,9 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
+
+// Application Insights — full SDK for custom telemetry (events + metrics)
+builder.Services.AddApplicationInsightsTelemetry();
 
 // Response caching for read-heavy summary endpoint
 builder.Services.AddResponseCaching();

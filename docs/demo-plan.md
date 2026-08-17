@@ -73,10 +73,28 @@ On Azure, I deploy using:
 - Application Insights and Log Analytics for full observability
 - Azure Key Vault for secret storage — no credentials in source code or app settings
 - GitHub Actions with Bicep for fully automated, repeatable infrastructure as code
+- A staging deployment slot for zero-downtime blue/green deployments
 
 The entire infrastructure is defined in a single Bicep template and deployed through CI/CD.
 This makes the deployment reproducible, auditable, and versionable — a DevOps principle
 described by Kim et al. (2016) in The DevOps Handbook.
+
+I want to highlight three design choices that demonstrate cloud-native engineering.
+
+First: a zero-secret architecture. The JWT signing key and database connection string live
+only in Key Vault. The App Service fetches them via managed identity at runtime — no secret
+ever touches source code, a config file, or environment variables. This directly addresses
+OWASP Secrets Management guidance (OWASP, 2021).
+
+Second: infrastructure as code with Bicep. Any engineer with the right Azure credentials can
+reproduce this environment exactly. The deployment is not a manual procedure — it is a
+version-controlled, auditable artefact.
+
+Third: blue/green deployment via App Service staging slots. New code is deployed to a staging
+slot, warmed up, and health-checked before being swapped to production. This eliminates
+deployment downtime entirely — a capability that is simply not possible in traditional
+on-premises environments. This implements the blue/green pattern described by Humble and
+Farley (2010) in Continuous Delivery.
 
 On environmental impact: by using PaaS managed services rather than self-managed virtual
 machines, and by autoscaling to avoid idle over-provisioning, this architecture minimises
@@ -94,49 +112,64 @@ running system."
 ### SEGMENT 3 — Security and compliance (6:00–10:00)
 
 **What to show on screen:**
-- Security control flow diagram (30 seconds)
-- Then: App Service → Configuration → show HTTPS-only, FTPS-only, minimum TLS 1.2
-- Then: Key Vault → show secrets exist (not their values)
-- Then: App Service → Identity → show system-assigned managed identity is on
-- Then: browser dev tools on the running API response → show security headers
-- Then: Postman or curl — call a protected endpoint without a token → show 401
-- Then: call an approve endpoint as a Requester role → show 403
-- Then: call reject without a comment → show 400
+- Security control flow diagram (20 seconds)
+- Threat model table from `docs/threat-model.md` — open in editor briefly
+- App Service → Configuration → HTTPS-only, FTPS-only, minimum TLS 1.2
+- Key Vault → Secrets (names visible, values hidden)
+- App Service → Identity → system-assigned managed identity on
+- Browser dev tools on API response → security headers visible
+- Postman or curl: protected endpoint with no token → 401
+- Postman or curl: approve as Requester → 403
+- Postman or curl: reject with no comment → 400
 
 **What to say:**
-"Security is backend-enforced in this application — it is not cosmetic.
+"Security is backend-enforced and threat-modelled in this application — not cosmetic.
 
-At the transport level: HTTPS is enforced with HSTS. TLS 1.2 is the minimum cipher version.
-FTPS-only is set. Storage has public access disabled. These controls align with NCSC (2023)
-guidance on secure cloud configuration.
+Before implementation, I produced a STRIDE threat model — a structured methodology
+developed at Microsoft (Shostack, 2014) for identifying threats across six categories:
+Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, and
+Elevation of Privilege.
 
-For secrets management: the JWT signing key and database connection string are stored in
-Azure Key Vault. The App Service accesses them via Key Vault references using its
-system-assigned managed identity. No secret ever appears in source code or application
-configuration — this directly addresses OWASP's Secrets Management guidance (OWASP, 2021).
+[Show threat model briefly]
 
-For access control: every API endpoint requires a valid JWT bearer token. Role claims are
-validated on every request. Requesters cannot make approval decisions — that returns 403
-Forbidden. This is separation of duties, a core principle of the UK GDPR's accountability
-requirement (ICO, 2024) and the ISO 27001 access control domain.
+I'll highlight the key mitigations across each category.
 
-Rejection requires a comment — not just in the UI but enforced in the API — returning 400
-Bad Request if omitted. This is important for audit trail completeness.
+Spoofing: JWT bearer tokens are required and signatures are validated against a key held
+only in Key Vault. A forged token without the signing key is cryptographically invalid.
 
-The API emits a full set of HTTP security headers on every response: X-Content-Type-Options,
-X-Frame-Options, Referrer-Policy, Content-Security-Policy, and Permissions-Policy. These
-reduce the attack surface against common browser-based attacks as catalogued in the OWASP
-Top Ten (OWASP, 2021).
+Tampering: the audit log is insert-only. There is no UPDATE or DELETE path for audit events
+in the API. The decision an approver makes cannot be altered after the fact — the trail
+is immutable by design.
 
-From a compliance perspective this maps directly to:
-- GDPR Article 5: data minimisation, accountability, integrity and confidentiality
+Repudiation: every action records the actor's email, timestamp, and context. An approver
+cannot credibly deny a decision because it is attributed and timestamped at the database level.
+
+Information disclosure: all secrets are in Key Vault. Nothing is in source code or
+application settings. CORS is locked to the known frontend origin. Error responses in
+production suppress stack traces.
+
+Denial of service: autoscale handles traffic spikes; health probes remove unhealthy
+instances automatically.
+
+Elevation of privilege: the decision endpoint is authorised for the Approver role only.
+A Requester attempting to call it receives HTTP 403.
+
+[Show live 401, 403, 400 demonstrations]
+
+The API emits a full set of HTTP security headers: X-Content-Type-Options, X-Frame-Options,
+Referrer-Policy, Content-Security-Policy, and Permissions-Policy. These reduce the attack
+surface against the OWASP Top Ten browser-based threat categories (OWASP, 2021).
+
+On the infrastructure side: HTTPS enforced with HSTS. TLS 1.2 minimum. FTPS-only. Storage
+with public access disabled. Key Vault with managed identity access only.
+
+This maps directly to:
 - GDPR Article 25: data protection by design
-- PCI DSS v4.0 requirement 7: restrict access to system components and cardholder data
-- ISO 27001 Annex A: access control, cryptography, and operations security"
+- PCI DSS v4.0 requirement 7: restrict access to system components
+- ISO 27001 Annex A: access control, cryptography, operations security
+- NCSC cloud security principles 2, 3, and 6 (NCSC, 2023)"
 
-[Show each screen element as you describe it — keep narration and screen in sync]
-
-**Rubric served:** Security & compliance (primary), Knowledge & understanding
+**Rubric served:** Security & compliance (primary)
 
 ---
 
@@ -405,4 +438,6 @@ State these as "(Author, Year)" during the relevant segment. Full list for submi
 - NCSC (2023) *Cloud Security Guidance*. Available at: https://www.ncsc.gov.uk/collection/cloud/understanding-cloud-services
 - OWASP (2021) *OWASP Top Ten*. Available at: https://owasp.org/www-project-top-ten/
 - OWASP (2021) *Secrets Management Cheat Sheet*. Available at: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+- Humble, J. and Farley, D. (2010) *Continuous Delivery*. Boston: Addison-Wesley.
 - Ramakrishnan, R. and Gehrke, J. (2003) *Database Management Systems*. 3rd edn. New York: McGraw-Hill.
+- Shostack, A. (2014) *Threat Modeling: Designing for Security*. Indianapolis: Wiley.
