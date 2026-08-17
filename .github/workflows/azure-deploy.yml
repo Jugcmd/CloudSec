@@ -47,7 +47,7 @@ jobs:
         run: |
           set -e
           MISSING=0
-          for NS in Microsoft.Web Microsoft.Sql Microsoft.Storage Microsoft.OperationalInsights Microsoft.Insights; do
+          for NS in Microsoft.Web Microsoft.Sql Microsoft.Storage Microsoft.OperationalInsights Microsoft.Insights Microsoft.KeyVault; do
             STATE=$(az provider show --namespace "$NS" --query registrationState -o tsv || echo "Unknown")
             echo "$NS registrationState=$STATE"
             if [ "$STATE" != "Registered" ]; then
