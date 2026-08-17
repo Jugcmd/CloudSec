@@ -323,6 +323,7 @@ resource highCpuAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
     evaluationFrequency: 'PT5M'
     windowSize: 'PT5M'
     criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
       allOf: [
         {
           name: 'HighCpu'
