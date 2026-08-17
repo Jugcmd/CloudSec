@@ -179,33 +179,43 @@ Open all of these before hitting record. Tab-switching mid-recording loses time.
 
 ## SEGMENT 5 — Performance and monitoring `14:00–16:30`
 
-**SHOW:**
-1. App Service → Configuration → Health check path `/healthz`
-2. Browser → `/healthz` and `/readyz` — show JSON responses
-3. Application Insights → Requests chart (real traffic visible)
-4. App Service Plan → Scale out → autoscale rules
-5. Monitor → Alerts → CPU alert
-6. `AppDbContext.cs` in editor — indexes visible (10 seconds)
-
 ---
+
+**SHOW: App Service → Configuration → scroll to Health check path — `/healthz` visible**
 
 > "Performance and resilience are addressed at four levels: database, application code, caching, and infrastructure.
 >
-> **Database:** I have defined explicit indexes on every field that drives a query — Status for filtered counts, CreatedUtc for ordering, RiskScore for high-risk aggregation, and a composite index on RequestId and CreatedUtc for event timeline retrieval. This follows the principle that query performance should be designed in, not tuned reactively (Ramakrishnan and Gehrke, 2003).
+> Starting at the database layer. I have defined explicit indexes on every field that drives a query in this application."
+
+**SHOW: VS Code → `backend/CloudSec.Api/Data/AppDbContext.cs` — scroll to the HasIndex calls**
+
+> "Status for filtered counts, CreatedUtc for ordering, RiskScore for high-risk aggregation, and a composite index on RequestId and CreatedUtc for event timeline retrieval. This follows the principle that query performance should be designed in, not tuned reactively — Ramakrishnan and Gehrke (2003) make this point clearly in Database Management Systems.
 >
-> **[Show AppDbContext.cs — indexes]**
+> Moving up to the API layer: the GetAll endpoint uses a single projected EF Core query. Projection happens in SQL, not in C# memory — there is no N+1 problem and no unnecessary data transfer. The summary endpoint — which powers the dashboard and is the most frequently called read path — uses database-level aggregation. COUNT and AVG run on the SQL engine, not in application memory. It is also wrapped in a 30-second output cache. A governance dashboard does not need sub-second freshness — 30 seconds means the database is queried at most twice per minute regardless of how many concurrent users are on the screen.
 >
-> **API layer:** The GetAll endpoint uses a single projected EF Core query — projection happens in SQL, not in C# memory. The summary endpoint uses database-level aggregation: COUNT and AVG run on the SQL engine. It is also wrapped in a 30-second output cache. A governance dashboard does not need sub-second freshness — 30 seconds means the database is queried at most twice per minute regardless of concurrent users.
+> Now to the health checks."
+
+**SHOW: Browser → navigate to `/healthz` — show the JSON response**
+
+> "The `/healthz` endpoint returns a simple healthy signal. App Service uses this as its health probe — any instance that fails to respond is automatically removed from the load balancer rotation."
+
+**SHOW: Browser → navigate to `/readyz` — show the JSON response**
+
+> "The `/readyz` endpoint goes further — it queries the database directly. It only returns healthy when the full stack, including the database connection, is functional. This is the distinction between liveness and readiness popularised by Kubernetes — now a standard pattern in cloud-native application design.
 >
-> **Health checks:** The API exposes `/healthz` and `/readyz`. The readiness endpoint queries the database directly — it only returns healthy when the full stack is functional. App Service uses `/healthz` as its health probe, providing automatic removal of unhealthy instances.
->
-> **[Show /healthz and /readyz]**
->
-> **Observability:** Application Insights captures request telemetry, dependency calls, failure rates, latency, and custom business events — including a metric for every exception request submitted and every decision made. This gives the three golden signals from Google's SRE book (Beyer et al., 2016): rate, errors, latency.
->
-> **[Show App Insights]**
->
-> **Autoscale:** scales out above 70% CPU for 5 minutes; scales in below 30% for 10 minutes; maximum 3 instances. This is proactive, metric-driven scaling — not schedule-based. The system responds to real demand patterns."
+> On to observability."
+
+**SHOW: Azure Portal → Application Insights → Requests chart or Live Metrics**
+
+> "Application Insights captures request telemetry, dependency calls, failure rates, and latency in real time. I have also instrumented custom business events — a metric fires for every exception request submitted and for every approval or rejection decision made. This gives the three golden signals from Google's SRE book — Beyer et al. (2016): request rate, error rate, and latency. And because the custom events track business actions, not just HTTP calls, you can observe governance activity, not just infrastructure traffic."
+
+**SHOW: App Service Plan → Scale out → autoscale rules visible**
+
+> "The autoscale rules scale out above 70% CPU sustained for 5 minutes, and scale in below 30% for 10 minutes, with a maximum of 3 instances. This is proactive, metric-driven scaling — not schedule-based. The system adapts to real demand patterns."
+
+**SHOW: Azure Monitor → Alerts → CPU alert rule visible**
+
+> "A severity-2 CPU alert fires at threshold breach, giving the operator a notification before the situation becomes critical. Proactive, not reactive."
 
 **Criteria:** Performance optimisation
 
@@ -213,34 +223,31 @@ Open all of these before hitting record. Tab-switching mid-recording loses time.
 
 ## SEGMENT 6 — Cost management `16:30–18:30`
 
-**SHOW:**
-1. Azure Cost Management → cost analysis (resource group scope)
-2. Any resource → Tags tab (all four tags visible)
-3. App Service Plan → Pricing tier (S1 shown)
-4. Cost Management → Budgets (monthly budget alert)
-
 ---
 
-> "Cost management is a first-class engineering concern here — not bolted on after deployment.
+**SHOW: Azure Portal → Cost Management → Cost analysis → scope set to this resource group**
+
+> "Cost management is a first-class engineering concern in this deployment — not bolted on after the fact. Everything you see in this cost analysis is attributable because every resource carries four tags."
+
+**SHOW: Any resource (e.g. App Service) → Tags tab — Application, Environment, Owner, CostCenter all visible**
+
+> "Application, Environment, Owner, and CostCenter. In Azure Cost Management these tags power cost attribution, chargeback reporting, and budget policy enforcement. The FinOps Foundation (2023) identifies tagging as the foundational practice for cost governance — without it, cloud spend cannot be allocated or controlled at scale."
+
+**SHOW: App Service Plan → Overview — Pricing tier: Standard S1 visible**
+
+> "The resource tier choices are right-sized by design. App Service Standard S1 is the minimum tier that supports production autoscaling — dropping below this tier removes the ability to respond to load dynamically. Azure SQL Basic provides 5 DTUs, which is appropriate for the read-write pattern of an internal governance tool at this scale. Storage Standard LRS gives adequate redundancy for static frontend hosting at the lowest cost point.
 >
-> **Tagging:** Every resource carries four tags — Application, Environment, Owner, CostCenter. In Azure Cost Management these power cost attribution, chargeback, and budget enforcement. The FinOps Foundation (2023) identifies tagging as the foundational practice for cost governance — without it, cloud spend cannot be allocated or controlled at scale.
+> Autoscale is not only a performance feature — it is a direct cost control. The system operates at one instance at idle and scales only under real load, avoiding permanently provisioned but underused compute. The environmental cost of idle compute is not zero. Autoscaling back to one instance at low load is both a cost control and a sustainability control.
 >
-> **[Show tags]**
+> Now to the budget alert."
+
+**SHOW: Cost Management → Budgets → monthly budget alert visible — 80% and 100% thresholds**
+
+> "This budget is defined in the Bicep template — a $30 monthly cap against this resource group, with alert notifications at 80% and 100% of actual spend. The team is notified before spend becomes a problem, not after it has already occurred. This is infrastructure-as-code cost governance — the control is not manually configured in the portal, it is deployed alongside the application.
 >
-> **Right-sizing:**
-> - App Service Standard S1 — the minimum tier with autoscale support; dropping below this loses the ability to respond to load dynamically
-> - Azure SQL Basic — 5 DTUs is sufficient for internal governance tooling at this scale
-> - Storage Standard LRS — adequate redundancy for static hosting at the lowest cost point
+> For a production workload with a predictable baseline, I would apply Azure Reserved Instances on the App Service Plan. Microsoft offers up to 72% discount over pay-as-you-go for one or three-year commitments — Microsoft Azure (2024). For any batch processing extensions, Spot Instances offer further savings at up to 90% discount with graceful eviction handling.
 >
-> **Autoscale as cost control:** the system operates at one instance at idle. It scales only under real load, avoiding permanently provisioned but underused compute. The environmental cost of idle compute is not zero — autoscaling back to one instance is both a cost and a sustainability control.
->
-> **Budget alert:** I have deployed an Azure Budget in the Bicep template — a monthly cap with alerts at 80% and 100% of actual spend against this resource group. The team is notified before spend becomes a problem, not after.
->
-> **[Show budget]**
->
-> For a production workload with a predictable baseline, I would apply Azure Reserved Instances on the App Service Plan. Microsoft offers up to 72% discount over pay-as-you-go for one or three-year commitments (Microsoft Azure, 2024). For any batch processing extensions, Azure Spot Instances offer further savings at up to 90% discount.
->
-> Together: tagged resources, right-sized tiers, autoscale, a budget alert, and a clear path to reserved capacity — a comprehensive, FinOps-aligned cost governance model."
+> Together: tagged resources, right-sized tiers, autoscale as cost control, a budget alert deployed as code, and a clear path to reserved capacity. That is a comprehensive, FinOps-aligned cost governance model."
 
 **Criteria:** Cost management
 
@@ -248,21 +255,21 @@ Open all of these before hitting record. Tab-switching mid-recording loses time.
 
 ## SEGMENT 7 — Risks, trade-offs, and roadmap `18:30–19:30`
 
-**SHOW:** Return to architecture diagram briefly, or keep clean browser view
-
 ---
+
+**SHOW: Architecture diagram — hold for 10 seconds, then leave on screen or switch to clean browser view**
 
 > "A credible engineering assessment includes an honest account of limitations and trade-offs.
 >
-> **Identity:** The current JWT model is application-issued. Appropriate for a demonstration, but in production I would replace it with Microsoft Entra ID — enterprise SSO, MFA, conditional access, and Privileged Identity Management for just-in-time approver access. This would elevate the identity posture significantly.
+> On identity: the current JWT model is application-issued. This is appropriate for a demonstration, but in production I would replace it with Microsoft Entra ID — enterprise SSO, multi-factor authentication, conditional access policies, and Privileged Identity Management for just-in-time approver access. This single change would elevate the identity posture significantly and remove the need for application-managed credentials entirely.
 >
-> **Resilience:** The deployment is single-region. For a compliance system handling sensitive decisions, I would add geo-redundant SQL with failover groups and Azure Front Door for global routing — a Recovery Time Objective in the range of minutes rather than hours.
+> On resilience: the deployment is single-region. For a compliance system handling sensitive decisions, I would add geo-redundant SQL with failover groups and Azure Front Door for global routing — giving a Recovery Time Objective in the range of minutes rather than hours.
 >
-> **Secrets rotation:** Key Vault is in place and secrets are referenced correctly. The next step is automated rotation on a schedule using Key Vault's native rotation policy, with diagnostic logging on every secret access event.
+> On secrets rotation: Key Vault is in place and secrets are referenced correctly at runtime. The next step is automated rotation on a schedule using Key Vault's native rotation policy, with diagnostic logging on every secret access event as compliance evidence.
 >
-> **Data governance:** A formal retention and archival policy for resolved requests would strengthen the GDPR Article 5(1)(e) storage limitation compliance story.
+> On data governance: a formal retention and archival policy for resolved exception requests would strengthen the GDPR Article 5(1)(e) storage limitation compliance story — defining how long approved and rejected requests are held before archival or deletion.
 >
-> These are not failures — they are the honest roadmap of a well-scoped MVP. The architecture is designed to accommodate every one of these extensions without structural rework."
+> These are not failures. They are the honest roadmap of a well-scoped MVP. The architecture has been designed to accommodate every one of these extensions without structural rework."
 
 **Criteria:** Design & architecture · Knowledge & understanding
 
@@ -270,13 +277,19 @@ Open all of these before hitting record. Tab-switching mid-recording loses time.
 
 ## SEGMENT 8 — Conclusion `19:30–20:00`
 
-**SHOW:** Live application dashboard — a clean final view
-
 ---
+
+**SHOW: Live application dashboard — clean final view, no dev tools or editor open**
 
 > "CloudSec is small by design. But it is not a toy.
 >
-> It demonstrates cloud architecture through a defensible three-tier design deployed on Azure with infrastructure as code. It demonstrates security through backend-enforced access control, encrypted secrets, HTTPS, and explicit compliance mapping to GDPR and PCI DSS. It demonstrates performance through health-checked endpoints, Application Insights telemetry, and production autoscaling. It demonstrates cost management through right-sized services, resource tagging, autoscale controls, and a clear path to reserved capacity.
+> It demonstrates cloud architecture through a defensible three-tier design, deployed on Azure with infrastructure as code, reproducible from a single Bicep template.
+>
+> It demonstrates security through backend-enforced access control, encrypted secrets in Key Vault, HTTPS with HSTS, and explicit compliance mapping to GDPR Article 25, PCI DSS requirement 7, and NCSC cloud security principles — all backed by a STRIDE threat model.
+>
+> It demonstrates performance through health-checked endpoints, Application Insights telemetry with custom business metrics, database indexes designed for the query patterns of this workload, and production autoscaling that responds to real demand.
+>
+> It demonstrates cost management through right-sized service tiers, resource tagging for attribution, autoscale as a cost and sustainability control, and a budget alert deployed as infrastructure code.
 >
 > Every decision has a rationale. Every control has evidence. And the entire system is live, deployed, and working."
 
