@@ -276,249 +276,325 @@ function App() {
     }
   }
 
+  function riskClass(score: number) {
+    if (score >= 80) return "risk-critical";
+    if (score >= 60) return "risk-high";
+    if (score >= 40) return "risk-medium";
+    return "risk-low";
+  }
+
   return (
-    <main className="page">
-      <section className="auth-bar">
-        <label>
-          Acting User
-          <input
-            type="email"
-            value={session.email}
-            onChange={(event) =>
-              setSession((current) => ({
-                ...current,
-                email: event.target.value,
-              }))
-            }
-          />
-        </label>
-
-        <label>
-          Role
-          <select
-            value={session.role}
-            onChange={(event) =>
-              setSession((current) => ({
-                ...current,
-                role: event.target.value as SessionRole,
-              }))
-            }
-          >
-            <option value="Requester">Requester</option>
-            <option value="Approver">Approver</option>
-          </select>
-        </label>
-
-        <div className="auth-actions">
-          <button type="button" onClick={() => void authenticate()}>
-            Sign In (Get JWT)
-          </button>
-          <button
-            type="button"
-            className="secondary"
-            onClick={() =>
-              setSession((current) => ({
-                ...current,
-                accessToken: "",
-                expiresUtc: "",
-              }))
-            }
-          >
-            Sign Out
-          </button>
-          <p className="muted auth-status">
-            {session.accessToken
-              ? `Authenticated as ${session.role}. Token expires ${new Date(session.expiresUtc).toLocaleString()}.`
-              : "Not authenticated. Sign in to call protected APIs."}
-          </p>
+    <div className="page">
+      {/* ── Top navigation bar ─────────────────────── */}
+      <nav className="topnav">
+        <div className="topnav-brand">
+          <div className="topnav-brand-icon">CS</div>
+          CloudSec
         </div>
-      </section>
 
-      <header className="hero">
-        <div>
-          <p className="eyebrow">CloudSec Pilot</p>
-          <h1>Security Exception Request Portal</h1>
-          <p className="lede">
-            Submit and track exception requests with a simple risk-scoring model
-            to support review workflows.
-          </p>
+        <div className="topnav-right">
+          <div className="topnav-pill">
+            <div>
+              <label>Acting as</label>
+              <input
+                type="email"
+                value={session.email}
+                onChange={(event) =>
+                  setSession((current) => ({ ...current, email: event.target.value }))
+                }
+                placeholder="user@example.com"
+              />
+            </div>
+          </div>
+
+          <div className="topnav-pill">
+            <div>
+              <label>Role</label>
+              <select
+                value={session.role}
+                onChange={(event) =>
+                  setSession((current) => ({
+                    ...current,
+                    role: event.target.value as SessionRole,
+                  }))
+                }
+              >
+                <option value="Requester">Requester</option>
+                <option value="Approver">Approver</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="topnav-pill">
+            <div
+              className={`auth-status-dot ${session.accessToken ? "active" : ""}`}
+            />
+            <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
+              {session.accessToken ? session.role : "Signed out"}
+            </span>
+          </div>
+
+          {session.accessToken ? (
+            <button
+              className="btn-nav secondary"
+              type="button"
+              onClick={() =>
+                setSession((current) => ({ ...current, accessToken: "", expiresUtc: "" }))
+              }
+            >
+              Sign Out
+            </button>
+          ) : (
+            <button
+              className="btn-nav"
+              type="button"
+              onClick={() => void authenticate()}
+            >
+              Sign In
+            </button>
+          )}
         </div>
-        <div className="stats">
-          <article>
-            <span>Total</span>
-            <strong>{stats.total}</strong>
-          </article>
-          <article>
-            <span>Pending</span>
-            <strong>{stats.pending}</strong>
-          </article>
-          <article>
-            <span>Avg Risk</span>
-            <strong>{stats.avgRisk}</strong>
-          </article>
-          <article>
-            <span>High Risk</span>
-            <strong>{stats.highRisk}</strong>
-          </article>
-          <article>
-            <span>Decisions 7d</span>
-            <strong>{stats.decisionEvents}</strong>
-          </article>
-          <article>
-            <span>Approval Rate</span>
-            <strong>{stats.approvalRate}%</strong>
-          </article>
+      </nav>
+
+      {/* ── Dashboard header + metrics ──────────────── */}
+      <header className="dashboard-header">
+        <div className="dashboard-header-top">
+          <div>
+            <p className="dashboard-eyebrow">Security Governance</p>
+            <h1 className="dashboard-title">Exception Request Portal</h1>
+            <p className="dashboard-subtitle">
+              Submit, track, and approve security exception requests with
+              automated risk scoring and full audit trail.
+            </p>
+          </div>
+        </div>
+
+        <div className="metrics-row">
+          <div className="metric-card">
+            <span className="metric-label">Total</span>
+            <span className="metric-value">{stats.total}</span>
+          </div>
+          <div className={`metric-card ${stats.pending > 0 ? "metric-pending" : ""}`}>
+            <span className="metric-label">Pending</span>
+            <span className="metric-value">{stats.pending}</span>
+          </div>
+          <div className="metric-card metric-good">
+            <span className="metric-label">Approved</span>
+            <span className="metric-value">{summary?.approvedRequests ?? 0}</span>
+          </div>
+          <div className="metric-card metric-alert">
+            <span className="metric-label">Rejected</span>
+            <span className="metric-value">{summary?.rejectedRequests ?? 0}</span>
+          </div>
+          <div className={`metric-card ${stats.highRisk > 0 ? "metric-alert" : ""}`}>
+            <span className="metric-label">High Risk</span>
+            <span className="metric-value">{stats.highRisk}</span>
+          </div>
+          <div className="metric-card">
+            <span className="metric-label">Avg Risk</span>
+            <span className="metric-value">{stats.avgRisk}</span>
+          </div>
         </div>
       </header>
 
-      <section className="content-grid">
+      {/* ── Main content ────────────────────────────── */}
+      <div className="content-area">
+        {/* Submit form */}
         <section className="panel">
-          <h2>New Exception Request</h2>
-          <form onSubmit={onSubmit} className="form-grid">
-            <label>
-              Title
-              <input
-                value={form.title}
-                onChange={(event) =>
-                  setForm({ ...form, title: event.target.value })
-                }
-                required
-              />
-            </label>
-            <label>
-              System Name
-              <input
-                value={form.systemName}
-                onChange={(event) =>
-                  setForm({ ...form, systemName: event.target.value })
-                }
-                required
-              />
-            </label>
-            <label>
-              Data Classification
-              <select
-                value={form.dataClassification}
-                onChange={(event) =>
-                  setForm({ ...form, dataClassification: event.target.value })
-                }
-              >
-                <option>Public</option>
-                <option>Internal</option>
-                <option>Confidential</option>
-                <option>Restricted</option>
-              </select>
-            </label>
-            <label className="full-width">
-              Description
-              <textarea
-                rows={4}
-                value={form.description}
-                onChange={(event) =>
-                  setForm({ ...form, description: event.target.value })
-                }
-                required
-              />
-            </label>
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Submit Request"}
-            </button>
-          </form>
-          {error ? <p className="error">{error}</p> : null}
+          <div className="panel-header">
+            <h2>New Exception Request</h2>
+          </div>
+          <div className="panel-body">
+            {!session.accessToken && (
+              <div className="alert alert-info" style={{ marginBottom: "16px" }}>
+                Sign in above to submit a request.
+              </div>
+            )}
+            <form onSubmit={onSubmit} className="form-grid">
+              <div className="field">
+                <label>Title</label>
+                <input
+                  value={form.title}
+                  onChange={(event) => setForm({ ...form, title: event.target.value })}
+                  placeholder="e.g. TLS 1.1 exception for legacy system"
+                  required
+                />
+              </div>
+              <div className="field">
+                <label>System Name</label>
+                <input
+                  value={form.systemName}
+                  onChange={(event) => setForm({ ...form, systemName: event.target.value })}
+                  placeholder="e.g. Legacy CRM"
+                  required
+                />
+              </div>
+              <div className="field">
+                <label>Data Classification</label>
+                <select
+                  value={form.dataClassification}
+                  onChange={(event) =>
+                    setForm({ ...form, dataClassification: event.target.value })
+                  }
+                >
+                  <option>Public</option>
+                  <option>Internal</option>
+                  <option>Confidential</option>
+                  <option>Restricted</option>
+                </select>
+              </div>
+              <div className="field full-width">
+                <label>Description</label>
+                <textarea
+                  rows={4}
+                  value={form.description}
+                  onChange={(event) =>
+                    setForm({ ...form, description: event.target.value })
+                  }
+                  placeholder="Describe the exception, business justification, and proposed mitigations…"
+                  required
+                />
+              </div>
+              <div className="full-width">
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={isSubmitting || !session.accessToken}
+                  style={{ width: "100%" }}
+                >
+                  {isSubmitting ? "Submitting…" : "Submit Request"}
+                </button>
+              </div>
+            </form>
+            {error ? (
+              <div className="alert alert-error" style={{ marginTop: "12px" }}>
+                {error}
+              </div>
+            ) : null}
+          </div>
         </section>
 
+        {/* Request list */}
         <section className="panel">
-          <div className="list-header">
-            <h2>Current Requests</h2>
+          <div className="panel-header">
+            <h2>Exception Requests</h2>
             <button
               type="button"
+              className="btn-secondary btn-sm"
               onClick={() => void loadRequests()}
               disabled={isLoading}
             >
-              {isLoading ? "Refreshing..." : "Refresh"}
+              {isLoading ? "Loading…" : "↻ Refresh"}
             </button>
           </div>
 
-          <div className="request-list">
-            {items.length === 0 ? <p>No requests yet.</p> : null}
-            {items.map((item) => (
-              <article key={item.id} className="request-card">
-                <div className="request-card-top">
-                  <h3>{item.title}</h3>
-                  <span
-                    className={`status status-${item.status.toLowerCase()}`}
-                  >
-                    {item.status}
-                  </span>
-                </div>
-                <p>{item.description}</p>
-                <ul>
-                  <li>Email: {item.requesterEmail}</li>
-                  <li>System: {item.systemName}</li>
-                  <li>Classification: {item.dataClassification}</li>
-                  <li>Risk score: {item.riskScore}</li>
-                </ul>
-
-                {item.status.toLowerCase() === "pending" ? (
-                  <div className="decision-actions">
-                    {session.role === "Approver" ? (
-                      <>
-                        <input
-                          type="text"
-                          value={decisionComments[item.id] ?? ""}
-                          placeholder="Approver comment"
-                          onChange={(event) =>
-                            setDecisionComments((current) => ({
-                              ...current,
-                              [item.id]: event.target.value,
-                            }))
-                          }
-                        />
-                        <button
-                          type="button"
-                          onClick={() => void applyDecision(item, "approve")}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          className="danger"
-                          onClick={() => void applyDecision(item, "reject")}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    ) : (
-                      <p className="muted">
-                        Switch role to Approver to make a decision.
-                      </p>
-                    )}
-                  </div>
-                ) : null}
-
-                <div className="timeline">
-                  <h4>Timeline</h4>
-                  {item.events.length === 0 ? <p>No events recorded.</p> : null}
-                  {item.events.map((eventItem) => (
-                    <div key={eventItem.id} className="timeline-item">
-                      <strong>{eventItem.eventType}</strong>
-                      <span>
-                        {new Date(eventItem.createdUtc).toLocaleString()} by{" "}
-                        {eventItem.actorEmail}
+          {items.length === 0 ? (
+            <div className="empty-state">
+              {session.accessToken
+                ? "No requests found. Submit one using the form."
+                : "Sign in to view requests."}
+            </div>
+          ) : (
+            <div className="request-list">
+              {items.map((item) => (
+                <article key={item.id} className="request-card">
+                  <div className="request-card-top">
+                    <span className="request-card-title">{item.title}</span>
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center", flexShrink: 0 }}>
+                      <span className={`risk-badge ${riskClass(item.riskScore)}`}>
+                        {item.riskScore}
                       </span>
-                      <p>
-                        {eventItem.fromStatus || "-"} to {eventItem.toStatus}
-                        {eventItem.comment ? ` - ${eventItem.comment}` : ""}
-                      </p>
+                      <span className={`status status-${item.status.toLowerCase()}`}>
+                        {item.status}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </div>
+                  </div>
+
+                  <p className="request-card-desc">{item.description}</p>
+
+                  <div className="request-card-meta">
+                    <span className="meta-item">
+                      <span>👤</span> {item.requesterEmail}
+                    </span>
+                    <span className="meta-item">
+                      <span>🖥</span> {item.systemName}
+                    </span>
+                    <span className="meta-item">
+                      <span>🏷</span> {item.dataClassification}
+                    </span>
+                    <span className="meta-item">
+                      <span>🕐</span>{" "}
+                      {new Date(item.createdUtc).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {item.status.toLowerCase() === "pending" && (
+                    <div className="decision-panel">
+                      <span className="decision-panel-label">Decision</span>
+                      {session.role === "Approver" ? (
+                        <div className="decision-row">
+                          <input
+                            type="text"
+                            value={decisionComments[item.id] ?? ""}
+                            placeholder="Add a comment (optional)"
+                            onChange={(event) =>
+                              setDecisionComments((current) => ({
+                                ...current,
+                                [item.id]: event.target.value,
+                              }))
+                            }
+                          />
+                          <button
+                            type="button"
+                            className="btn-approve"
+                            onClick={() => void applyDecision(item, "approve")}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-reject"
+                            onClick={() => void applyDecision(item, "reject")}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="muted">
+                          Switch to Approver role to make a decision.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {item.events.length > 0 && (
+                    <div className="timeline">
+                      <p className="timeline-title">Audit Trail</p>
+                      <div className="timeline-items">
+                        {item.events.map((eventItem) => (
+                          <div key={eventItem.id} className="timeline-item">
+                            <span className="timeline-event">{eventItem.eventType}</span>
+                            <span className="timeline-meta">
+                              {new Date(eventItem.createdUtc).toLocaleString()} · {eventItem.actorEmail}
+                            </span>
+                            {eventItem.fromStatus && (
+                              <span className="timeline-comment">
+                                {eventItem.fromStatus} → {eventItem.toStatus}
+                                {eventItem.comment ? ` · ${eventItem.comment}` : ""}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
         </section>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
 

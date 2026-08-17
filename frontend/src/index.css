@@ -1,14 +1,9 @@
 :root {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.4;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  line-height: 1.5;
   font-weight: 400;
-  color: #203242;
-  background: radial-gradient(
-    circle at 20% -10%,
-    #eef6fb,
-    #e7f0f6 30%,
-    #f5f8fa 70%
-  );
+  color: #0f172a;
+  background: #f1f5f9;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -28,9 +23,6 @@ body {
   min-height: 100vh;
 }
 
-h1,
-h2,
-h3,
-p {
+h1, h2, h3, h4, p {
   margin: 0;
 }
