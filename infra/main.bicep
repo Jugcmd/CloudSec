@@ -249,6 +249,16 @@ resource apiAppSecretAccess 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-01
           ]
         }
       }
+      {
+        tenantId: subscription().tenantId
+        objectId: stagingSlot.identity.principalId
+        permissions: {
+          secrets: [
+            'get'
+            'list'
+          ]
+        }
+      }
     ]
   }
 }
@@ -309,26 +319,7 @@ resource stagingSlot 'Microsoft.Web/sites/slots@2023-12-01' = {
   }
 }
 
-// Grant staging slot managed identity access to Key Vault secrets
-resource stagingSlotSecretAccess 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-01' = {
-  parent: keyVault
-  name: 'add'
-  dependsOn: [apiAppSecretAccess]
-  properties: {
-    accessPolicies: [
-      {
-        tenantId: subscription().tenantId
-        objectId: stagingSlot.identity.principalId
-        permissions: {
-          secrets: [
-            'get'
-            'list'
-          ]
-        }
-      }
-    ]
-  }
-}
+// Staging slot KV access is included in apiAppSecretAccess above (both entries merged to avoid duplicate 'add' resource name)
 
 resource appServiceScaleProfile 'Microsoft.Insights/autoscaleSettings@2022-10-01' = {
   name: '${appServicePlanName}-autoscale'
@@ -421,6 +412,9 @@ resource highCpuAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
 @description('Monthly budget in USD for cost alerting. Defaults to $30 which is appropriate for this workload.')
 param monthlyBudgetAmountUsd int = 30
 
+@description('Budget start date in YYYY-MM-DD format. Defaults to the first day of the current month.')
+param budgetStartDate string = utcNow('yyyy-MM-01')
+
 resource budget 'Microsoft.Consumption/budgets@2021-10-01' = {
   name: '${normalizedPrefix}-monthly-budget'
   properties: {
@@ -428,7 +422,7 @@ resource budget 'Microsoft.Consumption/budgets@2021-10-01' = {
     amount: monthlyBudgetAmountUsd
     timeGrain: 'Monthly'
     timePeriod: {
-      startDate: '${take(utcNow('yyyy-MM'), 7)}-01'
+      startDate: budgetStartDate
     }
     filter: {
       dimensions: {
