@@ -1,177 +1,165 @@
 # CloudSec — Demo Diagrams
 
-Diagrams for use during the recorded demo. Show each one at the point indicated in the script. Keep them on screen long enough to talk through the key points — roughly 30–60 seconds each.
+Show each diagram at the segment indicated. Hold on screen for 30–60 seconds while narrating.
 
 ---
 
 ## 1. Business problem — before vs after
 
-> 📺 Use in: **Segment 1** (0:00–2:00) — show while setting context
+> Use in **Segment 1** (0:00–2:00)
 
 ```mermaid
 flowchart LR
-    subgraph BEFORE [Without CloudSec]
-        A["Exception requested over email"] --> B["No risk assessment"]
-        B --> C["Informal decision, no record"]
-        C --> D["No audit trail, no accountability"]
-    end
+    A["Exception over email"] --> B["No risk assessment"]
+    B --> C["Informal decision"]
+    C --> D["No audit trail"]
 
-    subgraph AFTER [With CloudSec]
-        E["Requester submits via portal"] --> F["Automatic risk scoring"]
-        F --> G["Approver decision with comment"]
-        G --> H["Immutable audit log - GDPR / PCI evidence"]
-    end
+    E["Submit via CloudSec"] --> F["Automatic risk score"]
+    F --> G["Approver decision with comment"]
+    G --> H["Immutable audit log"]
 
-    BEFORE --> AFTER
+    D -->|"replaced by"| E
 ```
 
 ---
 
 ## 2. System architecture
 
-> 📺 Use in: **Segment 2** (2:00–6:00) — hold for ~60 seconds, then switch to Azure Portal
+> Use in **Segment 2** (2:00–6:00)
 
 ```mermaid
-flowchart TB
-    User["User - Requester or Approver"]
+flowchart LR
+    USER["User"]
+    GH["GitHub Actions"]
+    BICEP["Bicep template"]
+    FE["React SPA - Blob Storage"]
+    STAGING["Staging slot"]
+    PROD["Production slot - ASP.NET Core"]
+    DB["Azure SQL"]
+    KV["Key Vault"]
+    AI["Application Insights"]
+    LA["Log Analytics"]
+    BUDGET["Azure Budget alerts"]
+    SCALE["Autoscale 1-3 instances"]
+    TAGS["Resource tags"]
 
-    subgraph CICD [CI/CD Pipeline]
-        GH["GitHub Actions"]
-        BICEP["Bicep IaC - single template"]
-        GH --> BICEP
-    end
+    GH --> BICEP
+    BICEP -->|"deploys"| PROD
+    BICEP -->|"deploys"| FE
+    BICEP -->|"deploys"| DB
+    BICEP -->|"deploys"| KV
 
-    subgraph AZURE [Microsoft Azure]
-        subgraph FRONTEND [Static Hosting]
-            FE["React SPA - Blob Storage"]
-        end
-
-        subgraph API_TIER [App Service - Standard S1]
-            STAGING["Staging slot"]
-            PROD["Production slot - ASP.NET Core API"]
-            STAGING -->|"health check then swap"| PROD
-        end
-
-        subgraph DATA [Data and Secrets]
-            DB[("Azure SQL - SQLite in dev")]
-            KV["Azure Key Vault - JWT key and DB connection"]
-        end
-
-        subgraph OBS [Observability]
-            AI["Application Insights - telemetry and custom events"]
-            LA["Log Analytics"]
-        end
-
-        subgraph GOVN [Cost and Governance]
-            BUDGET["Azure Budget - 80% and 100% alerts"]
-            SCALE["Autoscale - 1 to 3 instances"]
-            TAGS["Resource tags - Application, Environment, Owner, CostCenter"]
-        end
-    end
-
-    BICEP --> AZURE
-    User --> FE
+    USER --> FE
     FE -->|"HTTPS and JWT"| PROD
+    STAGING -->|"health check then swap"| PROD
     PROD --> DB
-    PROD -->|"Managed identity"| KV
+    PROD -->|"managed identity"| KV
     PROD --> AI
     AI --> LA
+
+    PROD --- SCALE
+    PROD --- BUDGET
+    PROD --- TAGS
 ```
 
 ---
 
-## 3. Security control flow
+## 3. Security controls
 
-> 📺 Use in: **Segment 3** (6:00–10:00) — show briefly while introducing STRIDE
+> Use in **Segment 3** (6:00–10:00)
 
 ```mermaid
 flowchart LR
-    U["User request"] -->|"HTTPS, HSTS, TLS 1.2"| API["ASP.NET Core API"]
+    REQ["Incoming request"]
+    TLS["HTTPS - TLS 1.2 minimum - HSTS"]
+    JWT["JWT validation - Key Vault signed"]
+    RBAC["Role check - Requester or Approver"]
+    BIZ["Business rules - comment required"]
+    AUDIT["Insert-only audit log"]
+    HDRS["Security headers - CSP, X-Frame, Referrer-Policy"]
+    KV["Key Vault - managed identity only"]
+    STOR["Storage - public access off"]
 
-    API --> JWT["JWT validation - signature verified against Key Vault key"]
-    JWT --> RBAC["Role authorisation - Requester: read and submit only, Approver: decide only"]
-    RBAC --> BIZ["Business rules - comment required, insert-only audit log"]
-    BIZ --> DB[("Database - immutable audit trail")]
-    BIZ --> AI["App Insights - custom event per decision"]
-
-    API --> HDR["HTTP security headers - CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy"]
-
-    subgraph INFRA [Infrastructure controls]
-        KV["Key Vault - managed identity access only"]
-        STOR["Storage - public access disabled"]
-        FTPS["App Service - FTPS-only, always HTTPS"]
-    end
+    REQ --> TLS --> JWT --> RBAC --> BIZ --> AUDIT
+    BIZ --> HDRS
+    JWT -->|"secret from"| KV
+    RBAC -->|"401 if no token"| REQ
+    BIZ -->|"403 wrong role"| REQ
+    BIZ -->|"400 no comment"| REQ
+    KV --- STOR
 ```
 
 ---
 
 ## 4. Performance and monitoring
 
-> 📺 Use in: **Segment 5** (14:00–16:30) — show while discussing autoscale
+> Use in **Segment 5** (14:00–16:30)
 
 ```mermaid
-flowchart TB
-    subgraph DB_LAYER [Database layer]
-        IDX["Explicit indexes - Status, CreatedUtc, RiskScore, RequestId and CreatedUtc composite"]
-        PROJ["Single-query EF Core projection - no N+1, no C# mapping"]
-        AGG["DB-level aggregation - COUNT and AVG on SQL engine"]
-        CACHE["30s output cache on summary endpoint"]
-    end
+flowchart LR
+    IDX["DB indexes - Status, CreatedUtc, RiskScore"]
+    PROJ["Single EF Core query - projection in SQL"]
+    AGG["DB aggregation - COUNT and AVG on SQL engine"]
+    CACHE["30s output cache on summary endpoint"]
 
-    subgraph APP_LAYER [Application layer]
-        HZ["/healthz - liveness probe"]
-        RDY["/readyz - readiness, queries DB directly"]
-    end
+    HZ["/healthz - liveness"]
+    RDY["/readyz - queries DB directly"]
 
-    subgraph AZURE_OBS [Azure observability]
-        AI["Application Insights - request rate, latency, errors, custom business events"]
-        AS["Autoscale - CPU above 70% scale out, CPU below 30% scale in, max 3 instances"]
-        ALT["CPU alert - severity 2 at threshold breach"]
-    end
+    AI["Application Insights - rate, latency, errors"]
+    EVENTS["Custom events - per request, per decision"]
+    AS["Autoscale - CPU above 70 scale out, below 30 scale in"]
+    ALT["CPU alert - severity 2"]
 
-    DB_LAYER --> APP_LAYER --> AZURE_OBS
+    IDX --> PROJ --> AGG --> CACHE
+    CACHE --> HZ
+    CACHE --> RDY
+    HZ --> AI
+    RDY --> AI
+    AI --> EVENTS
+    AI --> AS
+    AS --> ALT
 ```
 
 ---
 
 ## 5. Cost governance
 
-> 📺 Use in: **Segment 6** (16:30–18:30) — show while discussing tags
+> Use in **Segment 6** (16:30–18:30)
 
 ```mermaid
 flowchart LR
-    subgraph RESOURCES [Deployed resources]
-        R1["App Service - Standard S1 - min autoscale tier"]
-        R2["Azure SQL - Basic 5 DTU"]
-        R3["Blob Storage - LRS"]
-        R4["Key Vault"]
-        R5["App Insights and Log Analytics"]
-    end
+    R1["App Service - Standard S1"]
+    R2["Azure SQL - Basic 5 DTU"]
+    R3["Blob Storage - LRS"]
+    R4["Key Vault"]
+    R5["App Insights"]
 
-    subgraph TAGS [Resource tags on all resources]
-        T1["Application: cloudsec"]
-        T2["Environment: dev"]
-        T3["Owner: engineering"]
-        T4["CostCenter: cloud-module"]
-    end
+    TAGS["4 tags on every resource - Application, Environment, Owner, CostCenter"]
+    CM["Azure Cost Management - attribution and chargeback"]
+    BUDGET["Azure Budget - 30 USD/month - alerts at 80 and 100 percent"]
+    AUTO["Autoscale - 1 instance at idle - scales on real demand"]
+    RI["Reserved Instances - 72 percent discount via billing commitment"]
 
-    subgraph CONTROLS [Cost controls]
-        AUTO["Autoscale - 1 instance at idle, scales on real load"]
-        BUDGET["Azure Budget - 30 USD/month cap, 80% and 100% alerts"]
-        FUTURE["Reserved Instances - 72% discount via Azure billing commitment, not Bicep deployable"]
-    end
+    R1 --> TAGS
+    R2 --> TAGS
+    R3 --> TAGS
+    R4 --> TAGS
+    R5 --> TAGS
 
-    RESOURCES --> TAGS --> CONTROLS
+    TAGS --> CM
+    CM --> BUDGET
+    CM --> AUTO
+    CM --> RI
 ```
 
 ---
 
-## Segment placement guide
+## Segment placement
 
-| Diagram | Segment | Timestamp | Purpose |
-|---|---|---|---|
-| Business problem | 1 | 0:00–2:00 | Frame the governance problem |
-| System architecture | 2 | 2:00–6:00 | Walk through deployed components |
-| Security control flow | 3 | 6:00–10:00 | Introduce STRIDE mitigations |
-| Performance & monitoring | 5 | 14:00–16:30 | Show autoscale and observability |
-| Cost governance | 6 | 16:30–18:30 | Show tagging and budget controls |
+| Diagram | Segment | When to show |
+|---|---|---|
+| Business problem | 1 | Opening — frame the problem |
+| System architecture | 2 | Walk through deployed services |
+| Security controls | 3 | Before the 401/403/400 live demo |
+| Performance and monitoring | 5 | While discussing autoscale rules |
+| Cost governance | 6 | While showing tags and budget |
