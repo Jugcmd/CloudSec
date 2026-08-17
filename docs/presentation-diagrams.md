@@ -10,19 +10,19 @@ Diagrams for use during the recorded demo. Show each one at the point indicated 
 
 ```mermaid
 flowchart LR
-    subgraph BEFORE ["❌ Without CloudSec"]
-        A[Exception requested\nover email / Slack] --> B[No risk assessment]
-        B --> C[Informal decision\nno record]
-        C --> D[No audit trail\nno accountability]
+    subgraph BEFORE [Without CloudSec]
+        A["Exception requested over email"] --> B["No risk assessment"]
+        B --> C["Informal decision, no record"]
+        C --> D["No audit trail, no accountability"]
     end
 
-    subgraph AFTER ["✅ With CloudSec"]
-        E[Requester submits\nvia portal] --> F[Automatic risk\nscoring]
-        F --> G[Approver decision\nwith comment]
-        G --> H[Immutable audit log\nGDPR / PCI evidence]
+    subgraph AFTER [With CloudSec]
+        E["Requester submits via portal"] --> F["Automatic risk scoring"]
+        F --> G["Approver decision with comment"]
+        G --> H["Immutable audit log - GDPR / PCI evidence"]
     end
 
-    BEFORE -->|replaced by| AFTER
+    BEFORE --> AFTER
 ```
 
 ---
@@ -33,44 +33,45 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    User["👤 User\n(Requester / Approver)"]
+    User["User - Requester or Approver"]
 
-    subgraph AZURE ["Microsoft Azure"]
-        subgraph FRONTEND ["Static Hosting"]
-            FE["React SPA\nBlob Storage + CDN"]
+    subgraph CICD [CI/CD Pipeline]
+        GH["GitHub Actions"]
+        BICEP["Bicep IaC - single template"]
+        GH --> BICEP
+    end
+
+    subgraph AZURE [Microsoft Azure]
+        subgraph FRONTEND [Static Hosting]
+            FE["React SPA - Blob Storage"]
         end
 
-        subgraph API_TIER ["App Service (Standard S1)"]
-            PROD["Production slot\nASP.NET Core API"]
-            STAGING["Staging slot\nBlue/green deployment"]
-            STAGING -->|health check → swap| PROD
+        subgraph API_TIER [App Service - Standard S1]
+            STAGING["Staging slot"]
+            PROD["Production slot - ASP.NET Core API"]
+            STAGING -->|"health check then swap"| PROD
         end
 
-        subgraph DATA ["Data & Secrets"]
-            DB[("Azure SQL\n(SQLite in dev)")]
-            KV["Azure Key Vault\nJWT key + DB connection"]
+        subgraph DATA [Data and Secrets]
+            DB[("Azure SQL - SQLite in dev")]
+            KV["Azure Key Vault - JWT key and DB connection"]
         end
 
-        subgraph OBS ["Observability"]
-            AI["Application Insights\nRequest telemetry\nCustom business events"]
+        subgraph OBS [Observability]
+            AI["Application Insights - telemetry and custom events"]
             LA["Log Analytics"]
         end
 
-        subgraph COST ["Cost & Governance"]
-            BUDGET["Azure Budget\n80% + 100% alerts"]
-            SCALE["Autoscale\n1–3 instances"]
-            TAGS["Resource tags\nApplication · Environment\nOwner · CostCenter"]
+        subgraph GOVN [Cost and Governance]
+            BUDGET["Azure Budget - 80% and 100% alerts"]
+            SCALE["Autoscale - 1 to 3 instances"]
+            TAGS["Resource tags - Application, Environment, Owner, CostCenter"]
         end
     end
 
-    subgraph CICD ["CI/CD"]
-        GH["GitHub Actions"]
-        BICEP["Bicep IaC\nsingle template"]
-        GH --> BICEP --> AZURE
-    end
-
+    BICEP --> AZURE
     User --> FE
-    FE -->|"HTTPS + JWT"| PROD
+    FE -->|"HTTPS and JWT"| PROD
     PROD --> DB
     PROD -->|"Managed identity"| KV
     PROD --> AI
@@ -85,21 +86,20 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    U["👤 Request"] -->|HTTPS + HSTS\nTLS 1.2 min| API["ASP.NET Core API"]
+    U["User request"] -->|"HTTPS, HSTS, TLS 1.2"| API["ASP.NET Core API"]
 
-    API --> JWT["JWT validation\nSignature verified\nagainst Key Vault key"]
-    JWT --> RBAC["Role authorisation\nRequester → read/submit\nApprover → decide only"]
-    RBAC --> BIZ["Business rules\nComment required\nInsert-only audit log"]
+    API --> JWT["JWT validation - signature verified against Key Vault key"]
+    JWT --> RBAC["Role authorisation - Requester: read and submit only, Approver: decide only"]
+    RBAC --> BIZ["Business rules - comment required, insert-only audit log"]
+    BIZ --> DB[("Database - immutable audit trail")]
+    BIZ --> AI["App Insights - custom event per decision"]
 
-    API --> HDR["HTTP security headers\nCSP · X-Frame-Options\nReferrer-Policy\nPermissions-Policy"]
+    API --> HDR["HTTP security headers - CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy"]
 
-    BIZ --> DB[("Database\nImmutable audit trail")]
-    BIZ --> AI["App Insights\nCustom event per decision"]
-
-    subgraph INFRA ["Infrastructure controls"]
-        KV["Key Vault\nManaged identity only"]
-        STOR["Storage\nPublic access disabled"]
-        FTPS["App Service\nFTPS-only · Always HTTPS"]
+    subgraph INFRA [Infrastructure controls]
+        KV["Key Vault - managed identity access only"]
+        STOR["Storage - public access disabled"]
+        FTPS["App Service - FTPS-only, always HTTPS"]
     end
 ```
 
@@ -111,22 +111,22 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    subgraph DB_LAYER ["Database layer"]
-        IDX["Explicit indexes\nStatus · CreatedUtc\nRiskScore · RequestId+CreatedUtc"]
-        PROJ["Single-query EF Core projection\nNo N+1 · No C# mapping"]
-        AGG["DB-level aggregation\nCOUNT + AVG on SQL engine"]
-        CACHE["30s output cache\non summary endpoint"]
+    subgraph DB_LAYER [Database layer]
+        IDX["Explicit indexes - Status, CreatedUtc, RiskScore, RequestId and CreatedUtc composite"]
+        PROJ["Single-query EF Core projection - no N+1, no C# mapping"]
+        AGG["DB-level aggregation - COUNT and AVG on SQL engine"]
+        CACHE["30s output cache on summary endpoint"]
     end
 
-    subgraph APP_LAYER ["Application layer"]
-        HZ["/healthz\nLiveness probe"]
-        RDY["/readyz\nReadiness — queries DB directly"]
+    subgraph APP_LAYER [Application layer]
+        HZ["/healthz - liveness probe"]
+        RDY["/readyz - readiness, queries DB directly"]
     end
 
-    subgraph AZURE_OBS ["Azure observability"]
-        AI["Application Insights\nRequest rate · Latency · Errors\n+ Custom business events"]
-        AS["Autoscale\nCPU > 70% → scale out\nCPU < 30% → scale in\nMax 3 instances"]
-        ALT["CPU alert\nSeverity 2 at threshold breach"]
+    subgraph AZURE_OBS [Azure observability]
+        AI["Application Insights - request rate, latency, errors, custom business events"]
+        AS["Autoscale - CPU above 70% scale out, CPU below 30% scale in, max 3 instances"]
+        ALT["CPU alert - severity 2 at threshold breach"]
     end
 
     DB_LAYER --> APP_LAYER --> AZURE_OBS
@@ -140,25 +140,25 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    subgraph RESOURCES ["Deployed resources"]
-        R1["App Service\nStandard S1\n(min autoscale tier)"]
-        R2["Azure SQL\nBasic 5 DTU"]
-        R3["Blob Storage\nLRS"]
+    subgraph RESOURCES [Deployed resources]
+        R1["App Service - Standard S1 - min autoscale tier"]
+        R2["Azure SQL - Basic 5 DTU"]
+        R3["Blob Storage - LRS"]
         R4["Key Vault"]
-        R5["App Insights\nLog Analytics"]
+        R5["App Insights and Log Analytics"]
     end
 
-    subgraph TAGS ["Resource tags (all resources)"]
+    subgraph TAGS [Resource tags on all resources]
         T1["Application: cloudsec"]
         T2["Environment: dev"]
         T3["Owner: engineering"]
         T4["CostCenter: cloud-module"]
     end
 
-    subgraph CONTROLS ["Cost controls"]
-        AUTO["Autoscale\n1 instance at idle\nscales on real load"]
-        BUDGET["Azure Budget\n$30/month cap\n80% + 100% alerts"]
-        FUTURE["Future: Reserved Instances\n72% discount (1–3yr commit)\nvia Azure billing — not Bicep"]
+    subgraph CONTROLS [Cost controls]
+        AUTO["Autoscale - 1 instance at idle, scales on real load"]
+        BUDGET["Azure Budget - 30 USD/month cap, 80% and 100% alerts"]
+        FUTURE["Reserved Instances - 72% discount via Azure billing commitment, not Bicep deployable"]
     end
 
     RESOURCES --> TAGS --> CONTROLS
