@@ -1,18 +1,17 @@
 # CloudSec — Recording Script
 
-**Format:** Screen recording + voiceover. No camera required.  
-**Length:** 20 minutes max.  
-**Goal:** 80–100% across all rubric criteria.
+**Format:** Screen recording + voiceover. No camera.
+**Length:** 20 minutes max.
 
 ---
 
 ## RUBRIC AT A GLANCE
 
-| Criterion | Weight | What top band requires |
+| Criterion | Weight | Top band needs |
 |---|---|---|
-| Knowledge & understanding | 15% | Depth, nuance, academic references, Azure rationale |
-| Design & architecture | 35% | IaC, three-tier, blue/green, Key Vault, justified choices |
-| Security & compliance | 10% | STRIDE model, JWT, RBAC, headers, GDPR/PCI mapping |
+| Knowledge & understanding | 15% | Depth, nuance, referenced choices, Azure rationale |
+| Design & architecture | 35% | IaC, three-tier, blue/green, Key Vault, justified decisions |
+| Security & compliance | 10% | STRIDE model, JWT/RBAC, headers, GDPR/PCI mapping |
 | Performance optimisation | 20% | Health checks, App Insights, autoscale, DB indexes, caching |
 | Cost management | 20% | Tags, right-sizing, autoscale, Budget alert, reserved instances |
 
@@ -20,11 +19,11 @@
 
 ## BEFORE YOU START — PREP CHECKLIST
 
-Open all of these before hitting record. Tab-switching mid-recording loses time.
+Open everything before hitting record. Switching tabs while talking loses flow.
 
-**Azure Portal (pre-open these tabs):**
+**Azure Portal tabs:**
 - [ ] Resource group → all resources visible
-- [ ] App Service → Configuration (HTTPS only, health check path)
+- [ ] App Service → Configuration (HTTPS only, health check path `/healthz`)
 - [ ] App Service → Identity (system-assigned managed identity ON)
 - [ ] Key Vault → Secrets (names visible, values hidden)
 - [ ] App Service Plan → Scale out (autoscale rules visible)
@@ -32,148 +31,151 @@ Open all of these before hitting record. Tab-switching mid-recording loses time.
 - [ ] Application Insights → Requests chart or Live Metrics
 - [ ] Cost Management → Cost analysis (resource group scope)
 - [ ] Any resource → Tags tab (all four tags visible)
-- [ ] Cost Management → Budgets (monthly budget alert)
+- [ ] Cost Management → Budgets
 
 **Browser tabs:**
 - [ ] Live app URL (signed in as Requester)
-- [ ] `/healthz` endpoint → JSON response
-- [ ] `/readyz` endpoint → JSON response
-- [ ] Dev tools open on an API call (security headers visible in Network tab)
+- [ ] `/healthz` response open
+- [ ] `/readyz` response open
+- [ ] Dev tools → Network tab on an API call (security headers visible)
 
-**Terminal / Postman (ready to run):**
-- [ ] `curl` with no token → 401
-- [ ] `curl` approve as Requester role → 403
-- [ ] `curl` reject with empty comment → 400
+**Terminal / Postman (pre-loaded, ready to run):**
+- [ ] Request with no token → will return 401
+- [ ] Approve request as Requester role → will return 403
+- [ ] Reject with empty comment → will return 400
 
-**Code (VS Code or editor):**
+**Code editor:**
 - [ ] `docs/threat-model.md` open
-- [ ] `backend/CloudSec.Api/Data/AppDbContext.cs` open (indexes visible)
+- [ ] `backend/CloudSec.Api/Data/AppDbContext.cs` open (scroll to HasIndex calls)
 - [ ] Architecture diagram from `docs/presentation-diagrams.md` rendered
 
 ---
 
-## SEGMENT 1 — Context and problem `0:00–2:00`
-
-**SHOW:** Architecture diagram — 30 seconds, then switch to running app
+## SEGMENT 1 — Context and the problem `0:00–2:00`
 
 ---
 
-> "This is CloudSec — a cloud-based security exception management application I designed and built for an internal governance use case at a professional services organisation.
->
-> The problem is real. Teams need to request temporary exceptions to security controls — firewall rules, privileged access grants, data handling deviations. At a firm handling confidential client data, these decisions carry legal weight. Without a governed process they are handled informally, with no audit trail, no consistent risk scoring, no accountability.
->
-> CloudSec replaces that with a controlled, auditable, cloud-native workflow deployed entirely on Microsoft Azure — with all infrastructure defined as code. The choice of Azure reflects its position as the leading enterprise cloud platform for regulated UK industries. Gartner (2023) positions Microsoft as a leader in the cloud infrastructure magic quadrant, and Azure holds over 100 compliance certifications relevant to a professional services context."
+> 📺 **Show:** Architecture diagram
 
-**Criteria:** Knowledge & understanding · Design & architecture
+"So — this is CloudSec. It's a cloud-based security exception management application I designed and built for an internal governance use case at a professional services firm.
 
----
+The problem it solves is something most organisations deal with but handle badly. Teams need to request temporary exceptions to security controls — a firewall rule, a privileged access grant, a deviation from a data handling policy. At a law firm handling confidential client matters, those decisions carry legal and regulatory weight. But in most places they're handled over email, in spreadsheets, or just informally — no consistent risk assessment, no audit trail, nothing you could produce if you needed to demonstrate compliance.
 
-## SEGMENT 2 — Architecture walkthrough `2:00–6:00`
+CloudSec replaces that with a governed, auditable workflow, deployed entirely on Azure with all infrastructure defined as code. I chose Azure deliberately — Gartner (2023) positions Microsoft as a leader in the cloud infrastructure and platform services magic quadrant, and Azure holds over 100 compliance certifications that are directly relevant to a regulated UK professional services context."
 
-**SHOW:**
-1. Architecture diagram — 60 seconds
-2. Azure Portal → Resource group (all resources listed)
+> 📺 **Switch to:** Running live application
 
 ---
 
-> "The architecture is a classic three-tier model: React frontend, ASP.NET Core API, and a database. This separation of concerns is a fundamental cloud architecture pattern described by Fowler (2002) in Patterns of Enterprise Application Architecture.
->
-> In development I use SQLite for simplicity. In production, the configuration layer automatically switches to Azure SQL. This is the twelve-factor app methodology (Wiggins, 2017) — factor three, config in the environment, not the codebase.
->
-> **On Azure I deploy:**
-> - App Service on Standard S1 — the minimum tier supporting production autoscaling
-> - Azure SQL Database — a fully managed, patched relational store
-> - Azure Blob Storage — serverless static hosting for the React app; no web server to manage
-> - Application Insights and Log Analytics — full observability stack
-> - Azure Key Vault — no credentials touch source code or app settings; ever
-> - GitHub Actions with Bicep — fully automated, reproducible, version-controlled deployments
-> - A staging deployment slot — zero-downtime blue/green deployments
->
-> **Three design choices I want to highlight:**
->
-> First: a zero-secret architecture. The JWT signing key and database connection string live only in Key Vault. The App Service fetches them via managed identity at runtime. This directly addresses OWASP Secrets Management guidance (OWASP, 2021).
->
-> Second: infrastructure as code with Bicep. Any engineer with the right credentials can reproduce this environment exactly. The deployment is not a manual procedure — it is a version-controlled, auditable artefact. Kim et al. (2016) describe this as a core DevOps principle in The DevOps Handbook.
->
-> Third: blue/green deployment via staging slots. New code deploys to staging, is health-checked, then swapped to production with zero downtime. Humble and Farley (2010) describe this pattern in Continuous Delivery — it is simply not possible in traditional on-premises environments.
->
-> On environmental impact: by using PaaS rather than self-managed VMs, and autoscaling to avoid idle over-provisioning, this architecture minimises compute waste. Microsoft (2023) reports Azure workloads can be up to 93% more energy efficient than equivalent on-premises deployments."
+## SEGMENT 2 — Architecture `2:00–6:00`
 
-**SHOW:** Azure Portal → resource group at this point
+---
 
-**Criteria:** Design & architecture · Knowledge & understanding · Cost management
+> 📺 **Show:** Architecture diagram — hold for about 60 seconds while speaking
+
+"The architecture follows a three-tier model — React frontend, ASP.NET Core API, and a database. That separation of concerns is a foundational cloud architecture pattern. Fowler (2002) describes it in Patterns of Enterprise Application Architecture as the standard baseline for maintainable, scalable applications.
+
+One design decision worth calling out early: in development I use SQLite for simplicity and fast iteration. In production, the configuration layer automatically switches to Azure SQL. That's the twelve-factor app methodology — specifically factor three, which says config belongs in the environment, not the codebase. Wiggins (2017) articulates this as one of the core principles of building software as a service.
+
+> 📺 **Switch to:** Azure Portal → Resource group → all resources visible
+
+So here's what's actually deployed. I'll walk through the key components.
+
+App Service on Standard S1 — that's the minimum tier that supports production autoscaling. Azure SQL Database for a fully managed relational store. Blob Storage for the React static site — no web server to manage, serverless hosting. Application Insights and Log Analytics for observability. And Azure Key Vault, which I'll come back to in a moment.
+
+There are three design choices I want to highlight specifically, because they demonstrate cloud-native engineering rather than just cloud hosting.
+
+**First: a zero-secret architecture.** The JWT signing key and the database connection string never appear in source code, configuration files, or environment variables. They live only in Key Vault. The App Service retrieves them via its system-assigned managed identity at runtime. That's the principle of least privilege — the managed identity has only get and list permissions on the vault, not create or delete. This directly addresses OWASP Secrets Management guidance (OWASP, 2021).
+
+**Second: infrastructure as code with Bicep.** The entire environment — every resource you can see in this resource group — is defined in a single Bicep template and deployed through a GitHub Actions pipeline. Any engineer with the right Azure credentials can reproduce this environment exactly. The deployment isn't a manual procedure, it's a version-controlled, auditable artefact. Kim et al. (2016) describe this as a core DevOps principle in The DevOps Handbook — making deployments repeatable and the infrastructure reviewable independently of application code.
+
+**Third: blue/green deployment via App Service staging slots.** New code deploys to a staging slot, gets health-checked, and is only swapped to production once it's confirmed healthy. Zero downtime. Humble and Farley (2010) describe this pattern in Continuous Delivery — and it's simply not achievable in a traditional on-premises environment without significant additional infrastructure.
+
+One more thing worth mentioning here: environmental impact. By using PaaS managed services rather than self-managed VMs, and by autoscaling back to a single instance at low load, this architecture avoids idle compute waste. Microsoft (2023) reports that Azure workloads can be up to 93% more energy efficient than equivalent on-premises deployments. That's not just a cost consideration — it's a sustainability one."
 
 ---
 
 ## SEGMENT 3 — Security and compliance `6:00–10:00`
 
-**SHOW:**
-1. `docs/threat-model.md` — open briefly in editor (10 seconds)
-2. App Service → Configuration: HTTPS-only, FTPS-only, TLS 1.2 min
-3. Key Vault → Secrets (names visible, values hidden)
-4. App Service → Identity → system-assigned ON
-5. Browser dev tools → Network tab → API response headers
-6. Terminal: `curl` no token → **401**
-7. Terminal: `curl` approve as Requester → **403**
-8. Terminal: `curl` reject, empty comment → **400**
+---
+
+> 📺 **Show:** `docs/threat-model.md` open in editor — hold for 10 seconds
+
+"Security in this application is backend-enforced and threat-modelled. Before writing any implementation code I produced a STRIDE threat model — a structured methodology developed at Microsoft and described by Shostack (2014) in Threat Modeling: Designing for Security. It covers six threat categories, and I want to walk through each one and show how the implementation responds.
+
+> 📺 **Switch to:** App Service → Configuration → HTTPS-only, FTPS-only, TLS 1.2 minimum visible
+
+**Spoofing** — can someone impersonate another user? Every protected endpoint requires a JWT bearer token. The token signature is validated against a key that lives only in Key Vault. Without that key, a forged token is cryptographically invalid. There's no other way in.
+
+**Tampering** — can someone alter a decision after the fact? The audit log is insert-only. There is no UPDATE or DELETE path for audit events anywhere in the API. Once a decision is recorded, it can't be changed. The trail is immutable by design, which is exactly what you need for a compliance-grade governance tool.
+
+> 📺 **Switch to:** Key Vault → Secrets (names visible, values hidden)
+
+**Repudiation** — can someone deny having made a decision? Every action records the actor's email, a timestamp, and the full context. An approver can't credibly deny a decision — it's attributed and timestamped at the database level.
+
+**Information disclosure** — what happens if something leaks? All secrets are in Key Vault, nothing in source code or app settings. CORS is locked to the known frontend origin. Error responses in production suppress stack traces entirely.
+
+> 📺 **Switch to:** App Service → Identity → system-assigned managed identity ON
+
+**Denial of service** — autoscale absorbs traffic spikes, and health probes remove unhealthy instances automatically from the load balancer rotation.
+
+**Elevation of privilege** — the decision endpoint is authorised for the Approver role only. Let me show that.
+
+> 📺 **Run:** `curl` with no auth token → 401 response
+
+No token — 401. As expected.
+
+> 📺 **Run:** `curl` approve endpoint as Requester role → 403 response
+
+Valid token, wrong role — 403. The authorisation is enforced at the API layer, not the UI.
+
+> 📺 **Run:** `curl` reject with empty comment → 400 response
+
+And a reject with no comment — 400. Business rules enforced server-side.
+
+> 📺 **Switch to:** Browser dev tools → Network tab → API response headers
+
+The API also emits a full set of HTTP security headers on every response — X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Content-Security-Policy, and Permissions-Policy. These reduce the browser-based attack surface across the OWASP Top Ten (OWASP, 2021).
+
+At the infrastructure level: HTTPS enforced with HSTS, TLS 1.2 minimum, FTPS-only, storage with public access disabled, Key Vault accessible only via managed identity.
+
+This implementation maps directly to GDPR Article 25 — data protection by design and by default. PCI DSS v4.0 requirement 7 — restricting access to system components. ISO 27001 Annex A controls on access control, cryptography, and operations security. And NCSC cloud security principles 2, 3, and 6 (NCSC, 2023)."
 
 ---
 
-> "Security is backend-enforced and threat-modelled — not cosmetic.
->
-> Before implementation I produced a STRIDE threat model — a structured methodology developed at Microsoft (Shostack, 2014) for identifying threats across six categories.
->
-> **[Show threat-model.md briefly]**
->
-> - **Spoofing:** JWT bearer tokens are required on all protected endpoints. Signatures are validated against a key held only in Key Vault. A forged token without that key is cryptographically invalid.
->
-> - **Tampering:** The audit log is insert-only. There is no UPDATE or DELETE path for audit events in the API. A decision cannot be altered — the trail is immutable by design.
->
-> - **Repudiation:** Every action records the actor's email, timestamp, and context. An approver cannot credibly deny a decision. It is attributed at the database level.
->
-> - **Information disclosure:** All secrets in Key Vault. Nothing in source code or app settings. CORS locked to the known frontend origin. Error responses suppress stack traces in production.
->
-> - **Denial of service:** Autoscale handles traffic spikes. Health probes remove unhealthy instances automatically.
->
-> - **Elevation of privilege:** The decision endpoint is authorised for the Approver role only. A Requester calling it receives HTTP 403.
->
-> **[Show the 401 / 403 / 400 live]**
->
-> The API emits a full set of HTTP security headers: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Content-Security-Policy, and Permissions-Policy — reducing the browser-based attack surface across the OWASP Top Ten (OWASP, 2021).
->
-> Infrastructure controls: HTTPS enforced with HSTS. TLS 1.2 minimum. FTPS-only. Storage with public access disabled. Key Vault with managed identity access only.
->
-> This maps to:
-> - GDPR Article 25 — data protection by design
-> - PCI DSS v4.0 requirement 7 — restrict access to system components
-> - ISO 27001 Annex A — access control, cryptography, operations security
-> - NCSC cloud security principles 2, 3, and 6 (NCSC, 2023)"
-
-**Criteria:** Security & compliance
+## SEGMENT 4 — Live application demo `10:00–14:00`
 
 ---
 
-## SEGMENT 4 — Live app demo `10:00–14:00`
+> 📺 **Show:** Live deployed application in the browser
 
-**SHOW:** Running deployed application throughout — stay in the browser
+"I'll walk through the full workflow on the live deployed system now.
 
----
+> 📺 **Action:** Enter email, select Requester, click Sign In
 
-> "I will now walk through the full workflow on the live deployed system.
->
-> **[Show app loading]** I sign in as a Requester. The API issues a JWT containing the user's role claim. The dashboard loads with the protected request list and summary metrics.
->
-> **[Submit a request]** I submit a security exception request. System: Litigation Ops Portal. Description: temporary outbound access for a matter export. Classification: Confidential. The API derives a risk score of 70 from the data classification — business logic, not just data storage. The request appears as Pending and an audit event is immediately recorded.
->
-> **[Try to reject with no comment]** The API returns 400 Bad Request. A comment is mandatory — enforced at the API level, not the UI.
->
-> **[Switch to Approver]** I sign in as an Approver. I can see the request. I approve it with a comment. Status moves to Approved. Another audit event is recorded — who decided, when, and what they said. This timeline provides the traceability required for governance and compliance.
->
-> **[Show dashboard metrics]** Total requests, pending, approved, high-risk count, average risk score, approval rate — all live from the deployed system.
->
-> This end-to-end flow demonstrates a working, deployed cloud application with real business logic, database persistence, and role-based access control. Not a prototype."
+I'm signing in as a Requester. The API issues a JWT containing the user's role claim — that claim is what drives authorisation throughout the application. The dashboard loads with the protected request list and the summary metrics.
 
-**Criteria:** All — this is the deployment artefact demonstration
+> 📺 **Action:** Fill in and submit a new exception request — System: Litigation Ops Portal, Classification: Confidential
+
+I'll submit an exception request. System is Litigation Ops Portal, classification is Confidential, description is a temporary outbound access request for a matter export. When I submit this, the API derives a risk score automatically — in this case 70, based on the data classification. That's business logic in the application layer, not just data storage. And the request appears immediately as Pending, with an audit event already recorded.
+
+> 📺 **Action:** Switch to Approver role, sign in
+
+Now I'll switch to an Approver. Same sign-in flow, different role claim in the token.
+
+> 📺 **Action:** Try to reject with the comment field empty
+
+If I try to reject without adding a comment — the API returns 400. A comment is mandatory for any decision. That rule is enforced at the API level, not the UI — you can't bypass it by calling the endpoint directly.
+
+> 📺 **Action:** Add a comment and approve the request
+
+I'll add a comment and approve. Status moves to Approved. Another audit event is recorded — who made the decision, when they made it, and what comment they provided. That full timeline is the traceability a governance process requires.
+
+> 📺 **Show:** Dashboard metrics updating
+
+And the dashboard metrics update — total requests, pending, approved, high-risk count, average risk score, approval rate. All live from the deployed system.
+
+This is a working, deployed cloud application with real business logic, real database persistence, and role-based access control. Not a mock."
 
 ---
 
@@ -181,43 +183,37 @@ Open all of these before hitting record. Tab-switching mid-recording loses time.
 
 ---
 
-**SHOW: App Service → Configuration → scroll to Health check path — `/healthz` visible**
+> 📺 **Show:** App Service → Configuration → Health check path set to `/healthz`
 
-> "Performance and resilience are addressed at four levels: database, application code, caching, and infrastructure.
->
-> Starting at the database layer. I have defined explicit indexes on every field that drives a query in this application."
+"Performance and resilience are addressed at four levels — database, application code, caching, and infrastructure. Let me go through each one.
 
-**SHOW: VS Code → `backend/CloudSec.Api/Data/AppDbContext.cs` — scroll to the HasIndex calls**
+Starting at the database. I've defined explicit indexes on every field that drives a query in this application.
 
-> "Status for filtered counts, CreatedUtc for ordering, RiskScore for high-risk aggregation, and a composite index on RequestId and CreatedUtc for event timeline retrieval. This follows the principle that query performance should be designed in, not tuned reactively — Ramakrishnan and Gehrke (2003) make this point clearly in Database Management Systems.
->
-> Moving up to the API layer: the GetAll endpoint uses a single projected EF Core query. Projection happens in SQL, not in C# memory — there is no N+1 problem and no unnecessary data transfer. The summary endpoint — which powers the dashboard and is the most frequently called read path — uses database-level aggregation. COUNT and AVG run on the SQL engine, not in application memory. It is also wrapped in a 30-second output cache. A governance dashboard does not need sub-second freshness — 30 seconds means the database is queried at most twice per minute regardless of how many concurrent users are on the screen.
->
-> Now to the health checks."
+> 📺 **Switch to:** VS Code → `AppDbContext.cs` → scroll to HasIndex calls
 
-**SHOW: Browser → navigate to `/healthz` — show the JSON response**
+Status, for filtered counts. CreatedUtc, for ordered listing. RiskScore, for high-risk aggregation. And a composite index on RequestId and CreatedUtc for the event timeline query. Ramakrishnan and Gehrke (2003) argue in Database Management Systems that query performance should be designed in from the start — not tuned reactively once you have a problem. That's the approach here.
 
-> "The `/healthz` endpoint returns a simple healthy signal. App Service uses this as its health probe — any instance that fails to respond is automatically removed from the load balancer rotation."
+At the API layer, the GetAll endpoint uses a single projected EF Core query — projection happens in SQL, not in C# memory. No N+1 queries, no unnecessary data transfer between the database and the application server. The summary endpoint — which powers the dashboard and is the most frequently called read path — uses database-level aggregation. COUNT and AVG run on the SQL engine. It's also wrapped in a 30-second output cache. A governance dashboard doesn't need sub-second freshness. 30 seconds means the database gets queried at most twice per minute regardless of how many users are on the screen simultaneously.
 
-**SHOW: Browser → navigate to `/readyz` — show the JSON response**
+> 📺 **Switch to:** Browser → `/healthz` endpoint → JSON response
 
-> "The `/readyz` endpoint goes further — it queries the database directly. It only returns healthy when the full stack, including the database connection, is functional. This is the distinction between liveness and readiness popularised by Kubernetes — now a standard pattern in cloud-native application design.
->
-> On to observability."
+The `/healthz` endpoint gives a simple liveness signal. App Service uses this as its health probe — any instance that stops responding is automatically removed from the load balancer.
 
-**SHOW: Azure Portal → Application Insights → Requests chart or Live Metrics**
+> 📺 **Switch to:** Browser → `/readyz` endpoint → JSON response
 
-> "Application Insights captures request telemetry, dependency calls, failure rates, and latency in real time. I have also instrumented custom business events — a metric fires for every exception request submitted and for every approval or rejection decision made. This gives the three golden signals from Google's SRE book — Beyer et al. (2016): request rate, error rate, and latency. And because the custom events track business actions, not just HTTP calls, you can observe governance activity, not just infrastructure traffic."
+The `/readyz` endpoint goes further — it queries the database directly. It only returns healthy when the full stack is functional, including the database connection. This is the liveness versus readiness distinction that Kubernetes popularised, and it's now a standard pattern in cloud-native application design.
 
-**SHOW: App Service Plan → Scale out → autoscale rules visible**
+> 📺 **Switch to:** Application Insights → Requests chart
 
-> "The autoscale rules scale out above 70% CPU sustained for 5 minutes, and scale in below 30% for 10 minutes, with a maximum of 3 instances. This is proactive, metric-driven scaling — not schedule-based. The system adapts to real demand patterns."
+For observability, Application Insights captures request telemetry, dependency calls, failure rates, and latency in real time. I've also instrumented custom business events — a metric fires for every exception request submitted and for every approval or rejection decision. That gives the three golden signals Beyer et al. (2016) describe in Site Reliability Engineering: request rate, error rate, and latency. But because the custom events track business actions rather than just HTTP calls, you can observe governance activity directly — not just infrastructure health.
 
-**SHOW: Azure Monitor → Alerts → CPU alert rule visible**
+> 📺 **Switch to:** App Service Plan → Scale out → autoscale rules
 
-> "A severity-2 CPU alert fires at threshold breach, giving the operator a notification before the situation becomes critical. Proactive, not reactive."
+The autoscale configuration scales out when CPU exceeds 70% for five sustained minutes, and scales back in below 30% for ten minutes — maximum of three instances. That's proactive, metric-driven scaling. It responds to real demand, not a calendar schedule.
 
-**Criteria:** Performance optimisation
+> 📺 **Switch to:** Monitor → Alerts → CPU alert rule
+
+And a severity-2 alert fires at threshold breach, so the operator gets a notification before the situation becomes critical. Proactive, not reactive."
 
 ---
 
@@ -225,53 +221,47 @@ Open all of these before hitting record. Tab-switching mid-recording loses time.
 
 ---
 
-**SHOW: Azure Portal → Cost Management → Cost analysis → scope set to this resource group**
+> 📺 **Show:** Azure Portal → Cost Management → Cost analysis → scoped to this resource group
 
-> "Cost management is a first-class engineering concern in this deployment — not bolted on after the fact. Everything you see in this cost analysis is attributable because every resource carries four tags."
+"Cost management is a first-class concern in this deployment — it's not bolted on after the fact. Everything in this cost analysis is attributable because every single resource carries four tags.
 
-**SHOW: Any resource (e.g. App Service) → Tags tab — Application, Environment, Owner, CostCenter all visible**
+> 📺 **Switch to:** Any resource → Tags tab — Application, Environment, Owner, CostCenter visible
 
-> "Application, Environment, Owner, and CostCenter. In Azure Cost Management these tags power cost attribution, chargeback reporting, and budget policy enforcement. The FinOps Foundation (2023) identifies tagging as the foundational practice for cost governance — without it, cloud spend cannot be allocated or controlled at scale."
+Application, Environment, Owner, and CostCenter. Those tags flow directly into Cost Management for attribution, chargeback reporting, and budget enforcement. The FinOps Foundation (2023) identifies tagging as the foundational practice for cloud cost governance — without it, you can see how much you're spending but you can't control or allocate it.
 
-**SHOW: App Service Plan → Overview — Pricing tier: Standard S1 visible**
+> 📺 **Switch to:** App Service Plan → Overview → Pricing tier: Standard S1
 
-> "The resource tier choices are right-sized by design. App Service Standard S1 is the minimum tier that supports production autoscaling — dropping below this tier removes the ability to respond to load dynamically. Azure SQL Basic provides 5 DTUs, which is appropriate for the read-write pattern of an internal governance tool at this scale. Storage Standard LRS gives adequate redundancy for static frontend hosting at the lowest cost point.
->
-> Autoscale is not only a performance feature — it is a direct cost control. The system operates at one instance at idle and scales only under real load, avoiding permanently provisioned but underused compute. The environmental cost of idle compute is not zero. Autoscaling back to one instance at low load is both a cost control and a sustainability control.
->
-> Now to the budget alert."
+The resource choices are right-sized by design, not over-provisioned as a default. App Service Standard S1 is the minimum tier that supports autoscaling — drop below it and you lose the ability to respond to load dynamically. Azure SQL Basic at 5 DTUs is appropriate for the read-write pattern of an internal governance tool. Storage Standard LRS gives adequate redundancy for static frontend hosting at the lowest cost point.
 
-**SHOW: Cost Management → Budgets → monthly budget alert visible — 80% and 100% thresholds**
+Autoscale is also a cost control, not just a performance one. The system runs at a single instance at idle and scales only when real load demands it. The environmental cost of idle compute isn't zero — autoscaling back down is both a financial and a sustainability control. That connects back to the Microsoft (2023) energy efficiency point from earlier.
 
-> "This budget is defined in the Bicep template — a $30 monthly cap against this resource group, with alert notifications at 80% and 100% of actual spend. The team is notified before spend becomes a problem, not after it has already occurred. This is infrastructure-as-code cost governance — the control is not manually configured in the portal, it is deployed alongside the application.
->
-> For a production workload with a predictable baseline, I would apply Azure Reserved Instances on the App Service Plan. Microsoft offers up to 72% discount over pay-as-you-go for one or three-year commitments — Microsoft Azure (2024). For any batch processing extensions, Spot Instances offer further savings at up to 90% discount with graceful eviction handling.
->
-> Together: tagged resources, right-sized tiers, autoscale as cost control, a budget alert deployed as code, and a clear path to reserved capacity. That is a comprehensive, FinOps-aligned cost governance model."
+> 📺 **Switch to:** Cost Management → Budgets → monthly budget alert visible
 
-**Criteria:** Cost management
+This budget is defined in the Bicep template — it's not manually configured in the portal, it's deployed alongside the application. A monthly cap with alerts at 80% and 100% of actual spend against this resource group. The team gets notified before spend becomes a problem.
+
+For a production workload with a predictable baseline, the next step would be Azure Reserved Instances on the App Service Plan. Microsoft Azure (2024) offers up to 72% discount over pay-as-you-go for one or three-year commitments. For any batch processing extensions, Spot Instances at up to 90% discount with graceful eviction handling.
+
+So: tagged resources, right-sized tiers, autoscale as a cost and sustainability control, a budget alert deployed as infrastructure code, and a clear path to reserved capacity. That's a FinOps-aligned cost governance model."
 
 ---
 
-## SEGMENT 7 — Risks, trade-offs, and roadmap `18:30–19:30`
+## SEGMENT 7 — Trade-offs and roadmap `18:30–19:30`
 
 ---
 
-**SHOW: Architecture diagram — hold for 10 seconds, then leave on screen or switch to clean browser view**
+> 📺 **Show:** Architecture diagram, or keep a clean browser view
 
-> "A credible engineering assessment includes an honest account of limitations and trade-offs.
->
-> On identity: the current JWT model is application-issued. This is appropriate for a demonstration, but in production I would replace it with Microsoft Entra ID — enterprise SSO, multi-factor authentication, conditional access policies, and Privileged Identity Management for just-in-time approver access. This single change would elevate the identity posture significantly and remove the need for application-managed credentials entirely.
->
-> On resilience: the deployment is single-region. For a compliance system handling sensitive decisions, I would add geo-redundant SQL with failover groups and Azure Front Door for global routing — giving a Recovery Time Objective in the range of minutes rather than hours.
->
-> On secrets rotation: Key Vault is in place and secrets are referenced correctly at runtime. The next step is automated rotation on a schedule using Key Vault's native rotation policy, with diagnostic logging on every secret access event as compliance evidence.
->
-> On data governance: a formal retention and archival policy for resolved exception requests would strengthen the GDPR Article 5(1)(e) storage limitation compliance story — defining how long approved and rejected requests are held before archival or deletion.
->
-> These are not failures. They are the honest roadmap of a well-scoped MVP. The architecture has been designed to accommodate every one of these extensions without structural rework."
+"I want to be honest about the limitations and the trade-offs in this implementation, because a credible engineering assessment has to include that.
 
-**Criteria:** Design & architecture · Knowledge & understanding
+On identity: the JWT model here is application-issued. For a demo, that's fine — it shows the pattern clearly. But in production I'd replace it with Microsoft Entra ID. Enterprise SSO, MFA, conditional access policies, and Privileged Identity Management for just-in-time approver access. That single change would substantially elevate the identity posture and remove the need for any application-managed credentials.
+
+On resilience: this is a single-region deployment. For a compliance system handling sensitive decisions at scale, I'd add geo-redundant SQL with failover groups and Azure Front Door for global routing — taking the Recovery Time Objective from hours down to minutes.
+
+On secrets rotation: Key Vault is in place and working correctly. The natural next step is automated rotation on a schedule using Key Vault's native rotation policy, with diagnostic logging on every secret access event as compliance evidence.
+
+On data governance: a formal retention and archival policy for resolved requests would strengthen the GDPR Article 5(1)(e) storage limitation story — defining how long approved and rejected requests are held before archival or deletion.
+
+None of these are failures. They're the honest roadmap of a well-scoped MVP. The architecture has been designed so that every one of these extensions can be added without structural rework."
 
 ---
 
@@ -279,52 +269,18 @@ Open all of these before hitting record. Tab-switching mid-recording loses time.
 
 ---
 
-**SHOW: Live application dashboard — clean final view, no dev tools or editor open**
+> 📺 **Show:** Live application dashboard — clean view, close any terminal or editor windows
 
-> "CloudSec is small by design. But it is not a toy.
->
-> It demonstrates cloud architecture through a defensible three-tier design, deployed on Azure with infrastructure as code, reproducible from a single Bicep template.
->
-> It demonstrates security through backend-enforced access control, encrypted secrets in Key Vault, HTTPS with HSTS, and explicit compliance mapping to GDPR Article 25, PCI DSS requirement 7, and NCSC cloud security principles — all backed by a STRIDE threat model.
->
-> It demonstrates performance through health-checked endpoints, Application Insights telemetry with custom business metrics, database indexes designed for the query patterns of this workload, and production autoscaling that responds to real demand.
->
-> It demonstrates cost management through right-sized service tiers, resource tagging for attribution, autoscale as a cost and sustainability control, and a budget alert deployed as infrastructure code.
->
-> Every decision has a rationale. Every control has evidence. And the entire system is live, deployed, and working."
+"CloudSec is a small application. But it demonstrates real cloud engineering.
 
-**Criteria:** All
+Architecture: a three-tier design deployed on Azure, fully reproducible from a single Bicep template, with zero-downtime blue/green deployments.
+
+Security: backend-enforced access control, secrets in Key Vault via managed identity, HTTPS with HSTS, HTTP security headers, and explicit compliance mapping to GDPR, PCI DSS, ISO 27001, and NCSC cloud principles — backed by a STRIDE threat model.
+
+Performance: health-checked endpoints, Application Insights telemetry with custom business metrics, database indexes designed for this workload's query patterns, and autoscaling that responds to real demand.
+
+Cost: right-sized service tiers, resource tagging for attribution and chargeback, autoscale as both a cost and sustainability control, and a budget alert deployed as infrastructure code.
+
+Every decision has a rationale. Every control has evidence. The system is live, deployed, and working."
 
 ---
-
-## KEY PHRASES — use these naturally during narration
-
-These signal top-band thinking to the examiner:
-
-- *"The choice of PaaS over IaaS reduces operational overhead and shifts patching responsibility to Microsoft — a strategic decision consistent with the shared responsibility model (Microsoft, 2023)."*
-- *"This follows the principle of least privilege — the managed identity has only get and list permissions on Key Vault, not the ability to create or delete secrets."*
-- *"The separation of IaC from application code means a security team could review infrastructure changes independently of feature development."*
-- *"This design would support ISO 27001 certification — the audit log is immutable by design because events are insert-only."*
-- *"The autoscale configuration responds to CPU — the metric that matters for this workload — rather than schedule-based scaling."*
-- *"The environmental cost of idle compute is not zero — autoscaling back to one instance at low load is both a cost and a sustainability control."*
-
----
-
-## REFERENCES — cite verbally as (Author, Year)
-
-- Armbrust, M. et al. (2010) 'A view of cloud computing', *Communications of the ACM*, 53(4), pp. 50–58.
-- Beyer, B. et al. (2016) *Site Reliability Engineering*. Sebastopol: O'Reilly Media.
-- FinOps Foundation (2023) *FinOps Framework*. Available at: https://www.finops.org/framework/
-- Fowler, M. (2002) *Patterns of Enterprise Application Architecture*. Boston: Addison-Wesley.
-- Gartner (2023) *Magic Quadrant for Cloud Infrastructure and Platform Services*. Stamford: Gartner.
-- Humble, J. and Farley, D. (2010) *Continuous Delivery*. Boston: Addison-Wesley.
-- Kim, G. et al. (2016) *The DevOps Handbook*. Portland: IT Revolution Press.
-- Microsoft (2023) *Microsoft Cloud for Sustainability*. Available at: https://azure.microsoft.com/en-us/explore/global-infrastructure/sustainability/
-- Microsoft Azure (2024) *Azure Reserved VM Instances*. Available at: https://azure.microsoft.com/en-us/pricing/reserved-vm-instances/
-- NCSC (2023) *Cloud Security Guidance*. Available at: https://www.ncsc.gov.uk/collection/cloud
-- OWASP (2021) *OWASP Top Ten*. Available at: https://owasp.org/www-project-top-ten/
-- OWASP (2021) *Secrets Management Cheat Sheet*. Available at: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
-- Ramakrishnan, R. and Gehrke, J. (2003) *Database Management Systems*. 3rd edn. New York: McGraw-Hill.
-- Shostack, A. (2014) *Threat Modeling: Designing for Security*. Indianapolis: Wiley.
-- Wiggins, A. (2017) *The Twelve-Factor App*. Available at: https://12factor.net/
-- Information Commissioner's Office (2024) *Guide to the UK GDPR*. Available at: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/
