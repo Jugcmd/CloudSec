@@ -7,13 +7,13 @@
 
 ## RUBRIC AT A GLANCE
 
-| Criterion | Weight | Top band needs |
-|---|---|---|
-| Knowledge & understanding | 15% | Depth, nuance, referenced choices, Azure rationale |
-| Design & architecture | 35% | IaC, three-tier, blue/green, Key Vault, justified decisions |
-| Security & compliance | 10% | STRIDE model, JWT/RBAC, headers, GDPR/PCI mapping |
-| Performance optimisation | 20% | Health checks, App Insights, autoscale, DB indexes, caching |
-| Cost management | 20% | Tags, right-sizing, autoscale, Budget alert, reserved instances |
+| Criterion                 | Weight | Top band needs                                                                         |
+| ------------------------- | ------ | -------------------------------------------------------------------------------------- |
+| Knowledge & understanding | 15%    | Depth, nuance, referenced choices, Azure rationale                                     |
+| Design & architecture     | 35%    | IaC, three-tier, blue/green, Key Vault, justified decisions, **environmental impact**  |
+| Security & compliance     | 10%    | STRIDE model, JWT/RBAC, headers, GDPR/PCI mapping, **IAM, encryption at rest/transit** |
+| Performance optimisation  | 20%    | Health checks, App Insights, autoscale, DB indexes, caching, **automated backups**     |
+| Cost management           | 20%    | Tags, right-sizing, autoscale, Budget alert, **reserved/spot instance rationale**      |
 
 ---
 
@@ -22,6 +22,7 @@
 Open everything before hitting record. Switching tabs while talking loses flow.
 
 **Azure Portal tabs:**
+
 - [ ] Resource group → all resources visible
 - [ ] App Service → Configuration (HTTPS only, health check path `/healthz`)
 - [ ] App Service → Identity (system-assigned managed identity ON)
@@ -34,17 +35,20 @@ Open everything before hitting record. Switching tabs while talking loses flow.
 - [ ] Cost Management → Budgets
 
 **Browser tabs:**
+
 - [ ] Live app URL (signed in as Requester)
 - [ ] `/healthz` response open
 - [ ] `/readyz` response open
 - [ ] Dev tools → Network tab on an API call (security headers visible)
 
 **Terminal / Postman (pre-loaded, ready to run):**
+
 - [ ] Request with no token → will return 401
 - [ ] Approve request as Requester role → will return 403
 - [ ] Reject with empty comment → will return 400
 
 **Code editor:**
+
 - [ ] `docs/threat-model.md` open
 - [ ] `backend/CloudSec.Api/Data/AppDbContext.cs` open (scroll to HasIndex calls)
 - [ ] Architecture diagram from `docs/presentation-diagrams.md` rendered
@@ -137,7 +141,9 @@ And a reject with no comment — 400. Business rules enforced server-side.
 
 The API also emits a full set of HTTP security headers on every response — X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Content-Security-Policy, and Permissions-Policy. These reduce the browser-based attack surface across the OWASP Top Ten (OWASP, 2021).
 
-At the infrastructure level: HTTPS enforced with HSTS, TLS 1.2 minimum, FTPS-only, storage with public access disabled, Key Vault accessible only via managed identity.
+**At the infrastructure level, I am using Azure Identity and Access Management—or IAM—via system-assigned managed identities. This ensures the App Service can access Key Vault natively without embedded credentials, strictly controlling infrastructure access.**
+
+**For data protection, encryption in transit is enforced via HTTPS with HSTS and a TLS 1.2 minimum. Crucially, encryption at rest is also fully implemented: Azure SQL uses Transparent Data Encryption (TDE) by default, and Blob Storage encrypts the static frontend assets at rest using 256-bit AES encryption.**
 
 This implementation maps directly to GDPR Article 25 — data protection by design and by default. PCI DSS v4.0 requirement 7 — restricting access to system components. ISO 27001 Annex A controls on access control, cryptography, and operations security. And NCSC cloud security principles 2, 3, and 6 (NCSC, 2023)."
 
@@ -194,6 +200,8 @@ Starting at the database. I've defined explicit indexes on every field that driv
 Status, for filtered counts. CreatedUtc, for ordered listing. RiskScore, for high-risk aggregation. And a composite index on RequestId and CreatedUtc for the event timeline query. Ramakrishnan and Gehrke (2003) argue in Database Management Systems that query performance should be designed in from the start — not tuned reactively once you have a problem. That's the approach here.
 
 At the API layer, the GetAll endpoint uses a single projected EF Core query — projection happens in SQL, not in C# memory. No N+1 queries, no unnecessary data transfer between the database and the application server. The summary endpoint — which powers the dashboard and is the most frequently called read path — uses database-level aggregation. COUNT and AVG run on the SQL engine. It's also wrapped in a 30-second output cache. A governance dashboard doesn't need sub-second freshness. 30 seconds means the database gets queried at most twice per minute regardless of how many users are on the screen simultaneously.
+
+**Beyond query speed, database resilience is handled natively by Azure SQL's automated backups, providing Point-in-Time Restore capabilities out of the box to protect against accidental data loss or corruption without requiring manual administrative overhead.**
 
 > 📺 **Switch to:** Browser → `/healthz` endpoint → JSON response
 
@@ -282,5 +290,3 @@ Performance: health-checked endpoints, Application Insights telemetry with custo
 Cost: right-sized service tiers, resource tagging for attribution and chargeback, autoscale as both a cost and sustainability control, and a budget alert deployed as infrastructure code.
 
 Every decision has a rationale. Every control has evidence. The system is live, deployed, and working."
-
----
