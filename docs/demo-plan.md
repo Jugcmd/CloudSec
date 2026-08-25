@@ -67,9 +67,9 @@ Open everything before hitting record. Switching tabs while talking loses flow.
 
 "This is CloudSec, a cloud-based security exception management application that was designed and built for an internal governance use case at a professional firm.
 
-It solves a problem that most organisations deal with but handle badly. Teams need to request temporary exceptions to security controls — a firewall rule, a privileged access grant, a deviation from a data handling policy. At a law firm handling confidential client matters, those decisions carry legal and regulatory weight. But in most places they're handled over email, in spreadsheets, or just informally — no consistent risk assessment, no audit trail, nothing you could produce if you needed to demonstrate compliance.
+It solves a problem that most organisations deal with but handle poorly. Teams need to request temporary exceptions to security controls such as a firewall rule, a privileged access grant or a deviation from a data handling policy. At a law firm handling confidential client matters, these decisions carry legal and regulatory weight. But in most places they're handled over email, in spreadsheets, or just informally — no consistent risk assessment, no audit trail, nothing you could produce if you needed to demonstrate compliance.
 
-CloudSec replaces that with a governed, auditable workflow, deployed entirely on Azure with all infrastructure defined as code. I chose Azure deliberately — Gartner (2023) positions Microsoft as a leader in the cloud infrastructure and platform services magic quadrant, and Azure holds over 100 compliance certifications that are directly relevant to a regulated UK professional services context."
+CloudSec replaces that with a governed, auditable workflow, deployed entirely on Azure with all infrastructure defined as code. I chose Azure deliberately. Gartner (2023) positions Microsoft as a leader in the cloud infrastructure and platform services magic quadrant, and Azure holds over 100 compliance certifications that are directly relevant to a regulated UK law firm."
 
 > 📺 **Switch to:** Running live application
 
@@ -81,9 +81,9 @@ CloudSec replaces that with a governed, auditable workflow, deployed entirely on
 
 > 📺 **Show:** Architecture diagram — hold for about 60 seconds while speaking
 
-"The architecture follows a three-tier model — React frontend, ASP.NET Core API, and a database. That separation of concerns is a foundational cloud architecture pattern. Fowler (2002) describes it in Patterns of Enterprise Application Architecture as the standard baseline for maintainable, scalable applications.
+"The architecture follows a three-tier model — React frontend, ASP.NET Core API, and a SQL database. That separation of concerns is a foundational cloud architecture pattern. Fowler (2002) describes it in Patterns of Enterprise Application Architecture as the standard baseline for maintainable, scalable applications.
 
-One design decision worth calling out early: in development I use SQLite for simplicity and fast iteration. In production, the configuration layer automatically switches to Azure SQL. That's the twelve-factor app methodology — specifically factor three, which says config belongs in the environment, not the codebase. Wiggins (2017) articulates this as one of the core principles of building software as a service.
+One design decision worth calling out early is in development I use SQLite for simplicity and fast iteration. In production, the configuration layer automatically switches to Azure SQL. That's the twelve-factor app methodology — specifically factor three, which says config belongs in the environment, not the codebase. Wiggins (2017) articulates this as one of the core principles of building software as a service.
 
 > 📺 **Switch to:** Azure Portal → Resource group → all resources visible
 
@@ -93,13 +93,13 @@ App Service on Standard S1 — that's the minimum tier that supports production 
 
 There are three design choices I want to highlight specifically, because they demonstrate cloud-native engineering rather than just cloud hosting.
 
-**First: a zero-secret architecture.** The JWT signing key and the database connection string never appear in source code, configuration files, or environment variables. They live only in Key Vault. The App Service retrieves them via its system-assigned managed identity at runtime. Access is granted through Azure Key Vault RBAC using the least-privilege Key Vault Secrets User role, rather than legacy access policies. This aligns with modern Azure security guidance and means the identity can read secrets without managing or deleting them. This directly addresses OWASP Secrets Management guidance (OWASP, 2021).
+**First: a zero-secret architecture.** The JWT signing key and the database connection string never appear in source code, configuration files, or environment variables. They live solely in Key Vault. The App Service retrieves them via its system-assigned managed identity at runtime. Access is granted through Azure Key Vault Role Based Access Control using the least-privilege Key Vault Secrets User role, rather than legacy access policies. This aligns with modern Azure security guidance and means the identity can read secrets without managing or deleting them. This directly addresses OWASP Secrets Management guidance (OWASP, 2021).
 
 **Second: infrastructure as code with Bicep.** The entire environment — every resource you can see in this resource group — is defined in a single Bicep template and deployed through a GitHub Actions pipeline. Bicep is the human-readable authoring language; during deployment it transpiles to an ARM JSON template, which Azure Resource Manager executes through ARM APIs. Any engineer with the right Azure credentials can reproduce this environment exactly. The deployment isn't a manual procedure, it's a version-controlled, auditable artefact. Kim et al. (2016) describe this as a core DevOps principle in The DevOps Handbook — making deployments repeatable and the infrastructure reviewable independently of application code.
 
 **Third: blue/green deployment via App Service staging slots.** New code deploys to a staging slot, gets health-checked, and is only swapped to production once it's confirmed healthy. Zero downtime. Humble and Farley (2010) describe this pattern in Continuous Delivery — and it's simply not achievable in a traditional on-premises environment without significant additional infrastructure.
 
-One more thing worth mentioning here: environmental impact. By using PaaS managed services rather than self-managed VMs, and by autoscaling back to a single instance at low load, this architecture avoids idle compute waste. Microsoft (2023) reports that Azure workloads can be up to 93% more energy efficient than equivalent on-premises deployments. That's not just a cost consideration — it's a sustainability one."
+One more thing worth mentioning here is the environmental impact. By using PaaS managed services rather than self-managed VMs, and by autoscaling back to a single instance at low load, this architecture avoids idle compute waste. Microsoft (2023) reports that Azure workloads can be up to 93% more energy efficient than equivalent on-premises deployments. That's not just a cost consideration — it's a sustainability one."
 
 ---
 
@@ -145,7 +145,7 @@ And a reject with no comment — 400. Business rules enforced server-side.
 
 The API also emits a full set of HTTP security headers on every response — X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Content-Security-Policy, and Permissions-Policy. These reduce the browser-based attack surface across the OWASP Top Ten (OWASP, 2021).
 
-**At the infrastructure level, I am using Azure Identity and Access Management—or IAM—via system-assigned managed identities. This ensures the App Service can access Key Vault natively without embedded credentials, strictly controlling infrastructure access.**
+**At the infrastructure level, I am using Azure Identity and Access Management (IAM) via system-assigned managed identities. This ensures the App Service can access Key Vault natively without embedded credentials, strictly controlling infrastructure access.**
 
 **For data protection, encryption in transit is enforced via HTTPS with HSTS and a TLS 1.2 minimum. Crucially, encryption at rest is also fully implemented: Azure SQL uses Transparent Data Encryption (TDE) by default, and Blob Storage encrypts the static frontend assets at rest using 256-bit AES encryption.**
 
