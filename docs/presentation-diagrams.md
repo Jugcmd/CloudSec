@@ -22,6 +22,8 @@ flowchart LR
     USER["User"]
     GH["GitHub Actions"]
     BICEP["Bicep template"]
+    ARMJSON["ARM JSON template"]
+    ARMAPI["Azure Resource Manager APIs"]
     FE["React SPA - Blob Storage"]
     STAGING["Staging slot"]
     PROD["Production slot - ASP.NET Core"]
@@ -33,17 +35,17 @@ flowchart LR
     SCALE["Autoscale 1-3 instances"]
     TAGS["Resource tags"]
 
-    GH --> BICEP
-    BICEP -->|"deploys"| PROD
-    BICEP -->|"deploys"| FE
-    BICEP -->|"deploys"| DB
-    BICEP -->|"deploys"| KV
+    GH --> BICEP --> ARMJSON --> ARMAPI
+    ARMAPI -->|"provisions"| PROD
+    ARMAPI -->|"provisions"| FE
+    ARMAPI -->|"provisions"| DB
+    ARMAPI -->|"provisions"| KV
 
     USER --> FE
     FE -->|"HTTPS and JWT"| PROD
     STAGING -->|"health check then swap"| PROD
     PROD --> DB
-    PROD -->|"managed identity"| KV
+    PROD -->|"managed identity + Azure RBAC"| KV
     PROD --> AI
     AI --> LA
 
@@ -65,7 +67,7 @@ flowchart LR
     BIZ["Business rules - comment required"]
     AUDIT["Insert-only audit log"]
     HDRS["Security headers - CSP, X-Frame, Referrer-Policy"]
-    KV["Key Vault - managed identity only"]
+    KV["Key Vault - managed identity + Azure RBAC"]
     STOR["Storage - public access off"]
 
     REQ --> TLS --> JWT --> RBAC --> BIZ --> AUDIT
