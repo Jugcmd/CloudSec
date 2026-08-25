@@ -23,29 +23,31 @@ Open everything before hitting record. Switching tabs while talking loses flow.
 
 **Azure Portal tabs:**
 
-- [ ] Resource group → all resources visible
-- [ ] App Service → Configuration (HTTPS only, health check path `/healthz`)
-- [ ] App Service → Identity (system-assigned managed identity ON)
-- [ ] Key Vault → Secrets (names visible, values hidden)
-- [ ] App Service Plan → Scale out (autoscale rules visible)
-- [ ] Monitor → Alerts (CPU alert listed)
-- [ ] Application Insights → Requests chart or Live Metrics
-- [ ] Cost Management → Cost analysis (resource group scope)
-- [ ] Any resource → Tags tab (all four tags visible)
-- [ ] Cost Management → Budgets
+- [ ] Resource group → open the app resource group and confirm all resources are visible in Overview
+- [ ] App Service → search for App Services, open the deployed web app, then open Configuration and confirm HTTPS only + health check path `/healthz`
+- [ ] App Service → Identity → system-assigned managed identity set to On
+- [ ] Key Vault → search for Key Vaults, open the vault, then open Secrets and confirm names visible while values stay hidden
+- [ ] App Service Plan → search for App Service plans, open the hosting plan, then open Scale out and confirm autoscale rules are visible
+- [ ] Monitor → open Alerts and confirm the CPU alert / alert rule is listed
+- [ ] Application Insights → open the app insights resource and confirm Requests chart or Live Metrics is visible
+- [ ] Cost Management → open Cost analysis scoped to the resource group and confirm spend is visible
+- [ ] Any resource → open one deployed resource, then Tags and confirm all four tags are present: Application, Environment, Owner, CostCenter
+- [ ] Cost Management → Budgets and confirm the monthly budget alert is visible
 
 **Browser tabs:**
 
-- [ ] Live app URL (signed in as Requester)
-- [ ] `/healthz` response open
-- [ ] `/readyz` response open
-- [ ] Dev tools → Network tab on an API call (security headers visible)
+- [ ] Live app URL → open the deployed frontend, sign in as Requester, and leave the dashboard visible
+- [ ] `/healthz` endpoint → open `https://<app-url>/healthz` and leave the healthy JSON response visible
+- [ ] `/readyz` endpoint → open `https://<app-url>/readyz` and leave the ready/healthy response visible
+- [ ] Dev tools → Network tab on an API call and confirm security headers are visible: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Content-Security-Policy`, `Permissions-Policy`
 
 **Terminal / Postman (pre-loaded, ready to run):**
 
-- [ ] Request with no token → will return 401
-- [ ] Approve request as Requester role → will return 403
-- [ ] Reject with empty comment → will return 400
+- [ ] Generate token: `POST /api/Auth/token` with body `{ "email": "requester@example.com", "role": "Requester" }` and copy the returned JWT
+- [ ] Request protected endpoint without token: `GET /api/SecurityExceptionRequests` → should return `401 Unauthorized`
+- [ ] Make a valid request to create a record: `POST /api/SecurityExceptionRequests` with `Authorization: Bearer <requester-token>` and a JSON body such as `{ "title": "Temporary firewall exception", "description": "Need outbound access for a matter export", "systemName": "Litigation Ops Portal", "dataClassification": "Confidential" }` → used to generate the request ID for later decision calls
+- [ ] Approve request as Requester role: `POST /api/SecurityExceptionRequests/{id}/decision` with `Authorization: Bearer <requester-token>` and body `{ "action": "approve", "comment": "Looks fine" }` → should return `403 Forbidden`
+- [ ] Reject with empty comment: `POST /api/SecurityExceptionRequests/{id}/decision` with `Authorization: Bearer <approver-token>` and body `{ "action": "reject", "comment": "" }` → should return `400 Bad Request`
 
 **Code editor:**
 
@@ -63,9 +65,9 @@ Open everything before hitting record. Switching tabs while talking loses flow.
 
 > 📺 **Show:** Architecture diagram
 
-"So — this is CloudSec. It's a cloud-based security exception management application I designed and built for an internal governance use case at a professional services firm.
+"This is CloudSec, a cloud-based security exception management application that was designed and built for an internal governance use case at a professional firm.
 
-The problem it solves is something most organisations deal with but handle badly. Teams need to request temporary exceptions to security controls — a firewall rule, a privileged access grant, a deviation from a data handling policy. At a law firm handling confidential client matters, those decisions carry legal and regulatory weight. But in most places they're handled over email, in spreadsheets, or just informally — no consistent risk assessment, no audit trail, nothing you could produce if you needed to demonstrate compliance.
+It solves a problem that most organisations deal with but handle badly. Teams need to request temporary exceptions to security controls — a firewall rule, a privileged access grant, a deviation from a data handling policy. At a law firm handling confidential client matters, those decisions carry legal and regulatory weight. But in most places they're handled over email, in spreadsheets, or just informally — no consistent risk assessment, no audit trail, nothing you could produce if you needed to demonstrate compliance.
 
 CloudSec replaces that with a governed, auditable workflow, deployed entirely on Azure with all infrastructure defined as code. I chose Azure deliberately — Gartner (2023) positions Microsoft as a leader in the cloud infrastructure and platform services magic quadrant, and Azure holds over 100 compliance certifications that are directly relevant to a regulated UK professional services context."
 
