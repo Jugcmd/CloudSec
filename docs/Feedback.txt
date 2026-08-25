@@ -1,0 +1,27 @@
+Emphasize the shift toward Azure Key Vault Role-Based Access Control (RBAC) over legacy access policies to align with modern Azure security standards.
+
+Explicitly state that the Bicep templates transpile to ARM JSON and are executed via ARM APIs, demonstrating deeper platform knowledge.
+
+Briefly mention database connection pooling limits for Azure SQL Basic tiers under high concurrency.  
+
+Ensure the verbal delivery avoids sounding overly scripted to maintain a professional, conversational presentation style.
+
+Contrast auto-scaling strictly as a performance tool against its role as a cost-capping mechanism during off-peak periods.
+
+┌────────────────────────────────────────────────────────────────────────┐
+│                        PRE-RECORDING CHECKLIST                         │
+├────────────────────────────────────────────────────────────────────────┤
+│ 1. Verify Timing Buffer                                                │
+│    - Current script total: ~20 minutes.                                │
+│    - Target actual talk time: 18:30–19:00 minutes.                     │
+│    - Hard cap penalty applies if video exceeds 20:00.     │
+│                                                                        │
+│ 2. Visual Alignment                                                    │
+│    - Display Diagram 3 (Security Controls) during Segment 3 narration  │
+│      alongside the markdown file.                      │
+│                                                                        │
+│ 3. Compliance & Administrative Submissions                             │
+│    - Include Harvard reference document alongside cover sheet[cite: 1, 4].│
+│    - Complete the BPP Cover Sheet Generative AI declaration. │
+└────────────────────────────────────────────────────────────────────────┘
+Strict Time Budget Management: The presentation brief imposes a hard 20-minute limit. Practice the script to ensure the pace lands between 18:30 and 19:00 to avoid any overrunning penalties[cite: 1, 2].  Visual Continuity in Segment 3: When narrating Segment 3, briefly display the security flowchart (Diagram 3) before opening docs/threat-model.md to make the security model visually clear[cite: 2, 3, 5].

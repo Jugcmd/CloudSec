@@ -57,6 +57,8 @@ Open everything before hitting record. Switching tabs while talking loses flow.
 
 ## SEGMENT 1 — Context and the problem `0:00–2:00`
 
+> Delivery note: use this as a conversational prompt rather than reading it word-for-word. Leave brief pauses while switching views and keep the full recording between 18:30 and 19:00 to preserve the 20-minute hard cap.
+
 ---
 
 > 📺 **Show:** Architecture diagram
@@ -89,9 +91,9 @@ App Service on Standard S1 — that's the minimum tier that supports production 
 
 There are three design choices I want to highlight specifically, because they demonstrate cloud-native engineering rather than just cloud hosting.
 
-**First: a zero-secret architecture.** The JWT signing key and the database connection string never appear in source code, configuration files, or environment variables. They live only in Key Vault. The App Service retrieves them via its system-assigned managed identity at runtime. That's the principle of least privilege — the managed identity has only get and list permissions on the vault, not create or delete. This directly addresses OWASP Secrets Management guidance (OWASP, 2021).
+**First: a zero-secret architecture.** The JWT signing key and the database connection string never appear in source code, configuration files, or environment variables. They live only in Key Vault. The App Service retrieves them via its system-assigned managed identity at runtime. Access is granted through Azure Key Vault RBAC using the least-privilege Key Vault Secrets User role, rather than legacy access policies. This aligns with modern Azure security guidance and means the identity can read secrets without managing or deleting them. This directly addresses OWASP Secrets Management guidance (OWASP, 2021).
 
-**Second: infrastructure as code with Bicep.** The entire environment — every resource you can see in this resource group — is defined in a single Bicep template and deployed through a GitHub Actions pipeline. Any engineer with the right Azure credentials can reproduce this environment exactly. The deployment isn't a manual procedure, it's a version-controlled, auditable artefact. Kim et al. (2016) describe this as a core DevOps principle in The DevOps Handbook — making deployments repeatable and the infrastructure reviewable independently of application code.
+**Second: infrastructure as code with Bicep.** The entire environment — every resource you can see in this resource group — is defined in a single Bicep template and deployed through a GitHub Actions pipeline. Bicep is the human-readable authoring language; during deployment it transpiles to an ARM JSON template, which Azure Resource Manager executes through ARM APIs. Any engineer with the right Azure credentials can reproduce this environment exactly. The deployment isn't a manual procedure, it's a version-controlled, auditable artefact. Kim et al. (2016) describe this as a core DevOps principle in The DevOps Handbook — making deployments repeatable and the infrastructure reviewable independently of application code.
 
 **Third: blue/green deployment via App Service staging slots.** New code deploys to a staging slot, gets health-checked, and is only swapped to production once it's confirmed healthy. Zero downtime. Humble and Farley (2010) describe this pattern in Continuous Delivery — and it's simply not achievable in a traditional on-premises environment without significant additional infrastructure.
 
@@ -103,7 +105,7 @@ One more thing worth mentioning here: environmental impact. By using PaaS manage
 
 ---
 
-> 📺 **Show:** `docs/threat-model.md` open in editor — hold for 10 seconds
+> 📺 **Show:** Diagram 3 — Security Controls, then `docs/threat-model.md` — hold the diagram briefly before opening the threat model
 
 "Security in this application is backend-enforced and threat-modelled. Before writing any implementation code I produced a STRIDE threat model — a structured methodology developed at Microsoft and described by Shostack (2014) in Threat Modeling: Designing for Security. It covers six threat categories, and I want to walk through each one and show how the implementation responds.
 
@@ -201,6 +203,8 @@ Status, for filtered counts. CreatedUtc, for ordered listing. RiskScore, for hig
 
 At the API layer, the GetAll endpoint uses a single projected EF Core query — projection happens in SQL, not in C# memory. No N+1 queries, no unnecessary data transfer between the database and the application server. The summary endpoint — which powers the dashboard and is the most frequently called read path — uses database-level aggregation. COUNT and AVG run on the SQL engine. It's also wrapped in a 30-second output cache. A governance dashboard doesn't need sub-second freshness. 30 seconds means the database gets queried at most twice per minute regardless of how many users are on the screen simultaneously.
 
+There is also a deliberate scalability boundary here. EF Core and the SQL client use connection pooling per App Service instance, while Azure SQL Basic has constrained compute and concurrency capacity. Under high concurrency, connection waits or database resource pressure could become the bottleneck. I would monitor pool exhaustion, wait times, and DTU usage, then tune the pool or move to a higher tier based on measured workload.
+
 **Beyond query speed, database resilience is handled natively by Azure SQL's automated backups, providing Point-in-Time Restore capabilities out of the box to protect against accidental data loss or corruption without requiring manual administrative overhead.**
 
 > 📺 **Switch to:** Browser → `/healthz` endpoint → JSON response
@@ -217,7 +221,7 @@ For observability, Application Insights captures request telemetry, dependency c
 
 > 📺 **Switch to:** App Service Plan → Scale out → autoscale rules
 
-The autoscale configuration scales out when CPU exceeds 70% for five sustained minutes, and scales back in below 30% for ten minutes — maximum of three instances. That's proactive, metric-driven scaling. It responds to real demand, not a calendar schedule.
+The autoscale configuration scales out when CPU exceeds 70% for five sustained minutes, and scales back in below 30% for ten minutes — maximum of three instances. Scaling out is primarily a performance and availability control: it adds capacity when demand rises. Scaling back in during off-peak periods is the cost control, because it removes idle instances. It responds to real demand, not a calendar schedule.
 
 > 📺 **Switch to:** Monitor → Alerts → CPU alert rule
 
@@ -241,7 +245,7 @@ Application, Environment, Owner, and CostCenter. Those tags flow directly into C
 
 The resource choices are right-sized by design, not over-provisioned as a default. App Service Standard S1 is the minimum tier that supports autoscaling — drop below it and you lose the ability to respond to load dynamically. Azure SQL Basic at 5 DTUs is appropriate for the read-write pattern of an internal governance tool. Storage Standard LRS gives adequate redundancy for static frontend hosting at the lowest cost point.
 
-Autoscale is also a cost control, not just a performance one. The system runs at a single instance at idle and scales only when real load demands it. The environmental cost of idle compute isn't zero — autoscaling back down is both a financial and a sustainability control. That connects back to the Microsoft (2023) energy efficiency point from earlier.
+Autoscaling does not make peak capacity free; its cost benefit comes from capping how long that extra capacity remains provisioned. At idle, the system returns to a single instance instead of paying continuously for peak capacity. The environmental cost of idle compute isn't zero, so scaling back down is both a financial and a sustainability control. That connects back to the Microsoft (2023) energy efficiency point from earlier.
 
 > 📺 **Switch to:** Cost Management → Budgets → monthly budget alert visible
 

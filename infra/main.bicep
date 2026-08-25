@@ -44,6 +44,7 @@ var storageName = toLower('${take(normalizedPrefix, 10)}st${take(uniqueString(re
 var appInsightsName = '${normalizedPrefix}-appi'
 var logAnalyticsName = '${normalizedPrefix}-law'
 var keyVaultName = toLower('${take(normalizedPrefix, 8)}kv${take(uniqueString(resourceGroup().id), 8)}')
+var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
 
 var resourceTags = {
   Application: 'CloudSec'
@@ -158,9 +159,8 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     }
     enabledForDeployment: false
     enabledForTemplateDeployment: true
-    enableRbacAuthorization: false
+    enableRbacAuthorization: true
     publicNetworkAccess: 'Enabled'
-    accessPolicies: []
   }
 }
 
@@ -234,32 +234,13 @@ resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
   }
 }
 
-resource apiAppSecretAccess 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-01' = {
-  parent: keyVault
-  name: 'add'
+resource apiAppSecretRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(keyVault.id, 'apiAppSecretRoleAssignment')
+  scope: keyVault
   properties: {
-    accessPolicies: [
-      {
-        tenantId: subscription().tenantId
-        objectId: apiApp.identity.principalId
-        permissions: {
-          secrets: [
-            'get'
-            'list'
-          ]
-        }
-      }
-      {
-        tenantId: subscription().tenantId
-        objectId: stagingSlot.identity.principalId
-        permissions: {
-          secrets: [
-            'get'
-            'list'
-          ]
-        }
-      }
-    ]
+    principalId: apiApp.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', keyVaultSecretsUserRoleId)
   }
 }
 
@@ -319,7 +300,15 @@ resource stagingSlot 'Microsoft.Web/sites/slots@2023-12-01' = {
   }
 }
 
-// Staging slot KV access is included in apiAppSecretAccess above (both entries merged to avoid duplicate 'add' resource name)
+resource stagingSlotSecretRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(keyVault.id, 'stagingSlotSecretRoleAssignment')
+  scope: keyVault
+  properties: {
+    principalId: stagingSlot.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', keyVaultSecretsUserRoleId)
+  }
+}
 
 resource appServiceScaleProfile 'Microsoft.Insights/autoscaleSettings@2022-10-01' = {
   name: '${appServicePlanName}-autoscale'
